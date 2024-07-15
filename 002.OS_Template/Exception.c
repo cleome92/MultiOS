@@ -1,4 +1,5 @@
 #include "device_driver.h"
+#include "multiOS.h"
 
 void Undef_Handler(unsigned int addr, unsigned int mode)
 {
@@ -23,7 +24,7 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
 
 #if 0
-	for(;;); /* ½ÇÇèÀ» À§ÇÏ¿© ´ÙÀ½ ÁÖ¼Ò·Î º¹±ÍÇÏµµ·Ï ÇÚµé·¯¸¦ ¼³°è */
+	for(;;); /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¼Ò·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½Úµé·¯ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 #endif
 }
 
@@ -229,7 +230,7 @@ void Key3_ISR(void)
 	rEXT_INT40_PEND = 0x1<<3;
 
 	Uart1_Printf("Key3 Pressed\n");
-
+	Uart1_Printf("App num : %d\n", getAppNum());
 	GIC_Clear_Pending_Clear(0,51);
 	GIC_Write_EOI(0, 51);
 }

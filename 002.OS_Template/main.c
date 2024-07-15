@@ -1,4 +1,5 @@
 #include "device_driver.h"
+#include "multiOS.h"
 
 extern WIN_INFO_ST ArrWinInfo[5];
 
@@ -10,23 +11,9 @@ extern WIN_INFO_ST ArrWinInfo[5];
 #define YELLOW	0xffe0
 #define VIOLET	0xf81f
 
-#define 	RAM_APP0			0x44100000
-#define 	RAM_APP1			(RAM_APP0+SIZE_APP0)
-#define 	SIZE_STACK0			(1*1024*1024)
-#define 	SIZE_STACK1			(1*1024*1024)
-#define 	STACK_LIMIT_APP0	(RAM_APP1+SIZE_APP1)
-#define 	STACK_LIMIT_APP1	(STACK_LIMIT_APP0+SIZE_STACK0)
-#define 	STACK_BASE_APP0		(STACK_LIMIT_APP0+SIZE_STACK0)
-#define 	STACK_BASE_APP1		(STACK_LIMIT_APP1+SIZE_STACK1)
 
-#define 	SIZE_APP0			(4*1024*1024)
-#define 	SIZE_APP1			(4*1024*1024)
-
-#define 	SECTOR_APP0			100
-#define 	SECTOR_APP1			5000
-
-#define SECTOR_SIZE 		512
-#define ALIGN_SECTOR(x)	 	((((x+(SECTOR_SIZE-1))&~(SECTOR_SIZE-1))/SECTOR_SIZE))
+#define DISABLE (0)
+#define ENABLE 	(1)
 
 void App_Read(unsigned int sector, unsigned int size, unsigned int addr)
 {
@@ -45,6 +32,7 @@ void Main(void)
 	Uart_Init(115200);
 	LED_Init();
 	Key_Poll_Init();
+	Key_ISR_Init();
 
 	Uart_Printf("\nOS Template\n");
 
@@ -68,13 +56,13 @@ void Main(void)
 	GIC_CPU_Interface_Enable(0,1);
 	GIC_Set_Priority_Mask(0,0xFF);
 	GIC_Distributor_Enable(1);
-
+	Key_ISR_Enable(ENABLE);
 #if 0 // SD Loading
 	{
 		extern volatile unsigned int sd_insert_flag;
 		SDHC_Init();
 		SDHC_ISR_Enable(1);
-		if(!sd_insert_flag) Uart_Printf("SD Ä«µå »ðÀÔ ¿ä¸Á!\n");
+		if(!sd_insert_flag) Uart_Printf("SD ì¹´ë“œ ì‚½ìž… ìš”ë§!\n");
 		while(!sd_insert_flag);
 		SDHC_Card_Init();
 
@@ -89,7 +77,7 @@ void Main(void)
 	{
 		unsigned char x;
 
-		Uart_Printf("\n½ÇÇàÇÒ APPÀ» ¼±ÅÃÇÏ½Ã¿À [1]APP0, [2]APP1 >> ");
+		Uart_Printf("\nì‹¤í–‰í•  APPì„ ì„ íƒí•˜ì‹œì˜¤ [1]APP0, [2]APP1 >> ");
 		x = Uart1_Get_Char();
 
 		if(x == '1')
@@ -98,6 +86,7 @@ void Main(void)
 			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA);
 			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP1-1, STACK_LIMIT_APP0, RW_WBWA);
 			CoInvalidateMainTlb();
+			setAppNum(NUM_APP0);
 			Run_App(RAM_APP0, STACK_BASE_APP0);
 		}
 
@@ -107,6 +96,7 @@ void Main(void)
 			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA);
 			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA);
 			CoInvalidateMainTlb();
+			setAppNum(NUM_APP1);
 			Run_App(RAM_APP0, STACK_BASE_APP1);
 		}
 	}
