@@ -25,18 +25,154 @@ __start:
 @--------------------------------------------------
 
 	.extern ISR_Vector
-
+	.extern gucAppNum
+	.extern getNextAppNum
+	.extern gpaunContextAddress
+	.extern debugPrint
+	.extern debugPrintNum
 HandlerIRQ:
-	sub		sp,sp,#4
-	push	{r0, lr}
-	ldr		lr, =ICCIAR_CPU0
-	ldr		r0, [lr]
-	ldr		lr, =0x3FF
-	and		r0, r0, lr
-	ldr		lr, =ISR_Vector
-	ldr		r0, [lr, r0, lsl #2]
-	str		r0, [sp, #8]
-	pop		{r0, lr, pc}
+    push {r0-r3, r12, lr}
+
+    ldr r1, =ISR_Vector
+    ldr r2, =ICCIAR_CPU0
+    ldr r0, [r2]
+    ldr r2, =0x3ff
+    and r0, r0, r2
+    ldr r0, [r1, r0, lsl #2]
+    blx r0
+
+	pop {r0-r3, r12, lr}
+
+@ Context Save Start
+	push {r0-r3}
+    @ Save the current application number
+    ldr r0, =gucAppNum
+    ldr r0, [r0]
+
+    @ Get the current context storage address
+    ldr r1, =gpaunContextAddress
+    ldr r2, [r1, r0, lsl #2]
+
+    @ Save context
+    str	r4, [r2, #16]
+    str	r5, [r2, #20]
+    str	r6, [r2, #24]
+	str	r7, [r2, #28]
+    str	r8, [r2, #32]
+    str	r9, [r2, #36]
+    str	r10, [r2, #40]
+    str	r11, [r2, #44]
+    str	r12, [r2, #48]
+
+	mrs		r1, cpsr
+	cps		#0x1f
+	str sp, [r2, #52] @ Save sp
+    str lr, [r2, #56] @ Save lr
+	msr		cpsr_cxsf, r1
+
+    mrs r3, spsr
+    str r3, [r2, #64]
+
+    pop {r0-r3}
+
+	push {r4-r7}
+    @ Save the current application number
+    ldr r4, =gucAppNum
+    ldr r4, [r4]
+
+    @ Get the current context storage address
+    ldr r5, =gpaunContextAddress
+    ldr r6, [r5, r4, lsl #2]
+
+	str	r0, [r6, #0]
+    str	r1, [r6, #4]
+    str	r2, [r6, #8]
+	str	r3, [r6, #12]
+
+	pop {r4-r7}
+@ Context Save End
+
+	push {r0-r3}
+	mov r0, #0
+	bl	debugPrint
+	pop	{r0-r3}
+
+@ Context Load Start
+	push {r0-r3}
+
+    @ Store the new application number
+    ldr r1, =gucAppNum
+    ldr r0, [r1]
+
+	@ Get the new context load address
+    ldr r1, =gpaunContextAddress
+    ldr r2, [r1, r0, lsl #2]
+
+
+
+    @ Load context
+    ldr	r4, [r2, #16]
+    ldr	r5, [r2, #20]
+    ldr	r6, [r2, #24]
+	ldr	r7, [r2, #28]
+    ldr	r8, [r2, #32]
+    ldr	r9, [r2, #36]
+    ldr	r10, [r2, #40]
+    ldr	r11, [r2, #44]
+    ldr	r12, [r2, #48]
+    ldr	r13, [r2, #52]
+    ldr	r14, [r2, #56]
+
+	mrs		r1, cpsr
+	cps		#0x1f
+    ldr sp, [r2, #52]
+    ldr lr, [r2, #56]
+	msr		cpsr_cxsf, r1
+
+    ldr r3, [r2, #64]
+    msr spsr, r3
+
+    pop {r0-r3}
+
+	push {r4-r7}
+    @ Save the current application number
+    ldr r4, =gucAppNum
+    ldr r4, [r4]
+
+    @ Get the current context storage address
+    ldr r5, =gpaunContextAddress
+    ldr r6, [r5, r4, lsl #2]
+
+	ldr	r0, [r6, #0]
+    ldr	r1, [r6, #4]
+    ldr	r2, [r6, #8]
+	ldr	r3, [r6, #12]
+
+	pop {r4-r7}
+@ Context Load End
+
+
+	push {r0-r3}
+	mov r0, #1
+	bl	debugPrint
+	pop	{r0-r3}
+
+	push {r0-r3,r4,r5}
+
+    mrs		r1, cpsr
+	cps		#0x1f
+    mov r4, sp
+    mov r5, lr
+	msr		cpsr_cxsf, r1
+
+	mov	r0, r4
+	bl debugPrintNum
+	mov	r0, r5
+	bl debugPrintNum
+
+	pop {r0-r3,r4,r5}
+
+    subs pc, lr, #4
 
 @--------------------------------------------------
 @ Exception Handler

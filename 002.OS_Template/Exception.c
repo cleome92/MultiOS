@@ -70,6 +70,7 @@ void Timer0_ISR(void) 	__attribute__ ((interrupt ("IRQ")));
 void Key3_ISR(void)		__attribute__ ((interrupt ("IRQ")));
 void Key4_ISR(void)		__attribute__ ((interrupt ("IRQ")));
 void SDHC_ISR(void) 	__attribute__ ((interrupt ("IRQ")));
+#endif
 
 void (*ISR_Vector[])(void) =
 {
@@ -247,7 +248,7 @@ void Key3_ISR(void)
 	Uart1_Printf("Key3 Pressed\n");
 	GIC_Clear_Pending_Clear(0,51);
 	GIC_Write_EOI(0, 51);
-	API_App_Change();
+//	API_App_Change();
 }
 
 void Key4_ISR(void)

@@ -57,6 +57,10 @@ void Main(void)
 	GIC_Set_Priority_Mask(0,0xFF);
 	GIC_Distributor_Enable(1);
 	Key_ISR_Enable(ENABLE);
+
+	gpaunContextAddress[0] = &gstRN[NUM_APP0];
+	gpaunContextAddress[1] = &gstRN[NUM_APP1];
+
 #if 0 // SD Loading
 	{
 		extern volatile unsigned int sd_insert_flag;
@@ -88,8 +92,7 @@ void Main(void)
 		{
 			Uart_Printf("\nAPP0 RUN\n", x);
 			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP1-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
-//			CoInvalidateMainTlb();
+			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
 			CoSetASID(NUM_APP0 + 1);
 			setAppNum(NUM_APP0);
 			Run_App(gstRN[NUM_APP0].RN[PC] , gstRN[NUM_APP0].RN[SP]);
@@ -100,7 +103,6 @@ void Main(void)
 			Uart_Printf("\nAPP1 RUN\n", x);
 			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
 			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
-			//CoInvalidateMainTlb();
 			CoSetASID(NUM_APP1 + 1);
 			setAppNum(NUM_APP1);
 			Run_App(gstRN[NUM_APP1].RN[PC] , gstRN[NUM_APP1].RN[SP]);

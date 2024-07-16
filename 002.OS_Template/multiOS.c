@@ -4,6 +4,7 @@
 UINT32 gaucAPP[MAX_APP_NUM];
 UINT8 gucAppNum = 0;
 struct T_Context gstRN[MAX_APP_NUM];
+struct T_Context * gpaunContextAddress[MAX_APP_NUM];
 
 void debugPrint(UINT8 x)
 {
@@ -15,6 +16,10 @@ void debugPrint(UINT8 x)
     }
 
 }
+void debugPrintNum(UINT32 x)
+{
+    Uart_Printf("%.8X  =========\n", x);
+}
 
 void setAppNum(UINT8 num)
 {
@@ -23,6 +28,10 @@ void setAppNum(UINT8 num)
 UINT8 getAppNum()
 {
     return gucAppNum;
+}
+UINT8 getNextAppNum()
+{
+    return (gucAppNum + 1) % MAX_APP_NUM;
 }
 
 void saveCurrentContext(UINT8 ucCurrentAppNum)
@@ -77,4 +86,5 @@ void API_App_Change(void)
 
     debugPrint(2);
 }
+
 

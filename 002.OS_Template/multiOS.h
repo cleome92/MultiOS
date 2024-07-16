@@ -53,9 +53,11 @@ struct T_Context
 };
 
 extern struct T_Context gstRN[];
-
+extern struct T_Context * gpaunContextAddress[];
 extern UINT32 Get_User_SP(void);
 extern UINT32 VA_2_PA(UINT32);
 extern UINT8 getAppNum(void);
 extern void setAppNum(UINT8 num);
+extern void debugPrint(UINT8 x);
+extern void debugPrintNum(UINT32 x);
 #endif
