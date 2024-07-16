@@ -48,34 +48,23 @@ HandlerIRQ:
 	.extern		SVC_Handler
 
 HandlerUndef:
-	stmfd	sp!,{r0-r3, r12, lr}
 	sub 	r0, lr, #4
 	mrs		r1, spsr
 	and		r1, r1, #0x1f
 	bl		Undef_Handler
-	ldmfd	sp!,{r0-r3, r12, lr}
-	subs	pc, lr, #4
 
-@ 실험을 위하여 문제가 발생한 다음 주소로 복귀하도록 수정 @
 
 HandlerDabort:
-	stmfd	sp!,{r0-r3, r12, lr}
 	sub 	r0, lr, #8
 	mrs		r1, spsr
 	and		r1, r1, #0x1f
 	bl		Dabort_Handler
-	ldmfd	sp!,{r0-r3, r12, lr}
-	@subs	pc, lr, #8
-	subs	pc, lr, #4
 
 HandlerPabort:
-	stmfd	sp!,{r0-r3, r12, lr}
 	sub 	r0, lr, #4
 	mrs		r1, spsr
 	and		r1, r1, #0x1f
 	bl		Pabort_Handler
-	ldmfd	sp!,{r0-r3, r12, lr}
-	subs	pc, lr, #4
 
 HandlerSVC:
 	stmfd	sp!,{r0-r3, r12, lr}

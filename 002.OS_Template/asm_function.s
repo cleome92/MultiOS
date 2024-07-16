@@ -19,6 +19,12 @@ Run_App:
 	msr		cpsr_cxsf, r4
 	pop		{r4, pc}
 
+	.global Jump_App
+Jump_App:
+	cps		#0x1f
+	mov 	sp, r1
+	blx		r0
+
 	.global Get_User_SP
 Get_User_SP:
 
@@ -117,11 +123,20 @@ TLB_Type:
 	mrc 	p15, 0, r0, c0, c0, 3
 	bx 		lr
 
-	.global VA_2_PA
-VA_2_PA:
-	mcr 	p15, 0, r0, c7, c8, 2
-	mrc 	p15, 0, r0, c7, c8, 3
+	.global saveContext
+saveContext:
+	stmia	r0, {r0-r15}^
+	mrs		r1, spsr
+	str		r1,	[r0, #64]
 	bx 		lr
 
+	.global loadContext
+loadContext:
+	
+	ldr		r1,	[r0, #64]
+	msr		cpsr_cxsf, r1
+	ldmdb	r0, {r0-r15}^
+@	ldr		lr,	[r0, #60]
+@	bx 		lr
 
 	.end

@@ -26,6 +26,34 @@
 typedef unsigned char UINT8;
 typedef unsigned int UINT32;
 
+enum Resister
+{
+    R0 = 0,
+    R1,
+    R2,
+    R3,
+    R4,
+    R5,
+    R6,
+    R7,
+    R8,
+    R9,
+    R10,
+    R11,
+    R12,
+    SP,
+    LR,
+    PC,
+    CPSR
+};
+
+struct T_Context
+{
+    UINT32 RN[17];
+};
+
+extern struct T_Context gstRN[];
+
 extern UINT32 Get_User_SP(void);
 extern UINT32 VA_2_PA(UINT32);
 extern UINT8 getAppNum(void);

@@ -24,7 +24,7 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
 
 #if 0
-	for(;;); /* ������ ���Ͽ� ���� �ּҷ� �����ϵ��� �ڵ鷯�� ���� */
+	for(;;); /* 占쏙옙占쏙옙占쏙옙 占쏙옙占싹울옙 占쏙옙占쏙옙 占쌍소뤄옙 占쏙옙占쏙옙占싹듸옙占쏙옙 占쌘들러占쏙옙 占쏙옙占쏙옙 */
 #endif
 }
 
@@ -48,6 +48,21 @@ void SVC_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("SVC-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
 	Uart_Printf("SVC-ID[%u]\n", Macro_Extract_Area(*(unsigned int *)addr, 0xffffff, 0));
 }
+
+#if 1
+
+void Invalid_ISR(void);
+void Uart1_ISR(void);
+void Timer0_ISR(void);
+void Key3_ISR(void);
+void Key4_ISR(void);
+void SDHC_ISR(void);
+
+#endif
+
+// Tail Call
+
+#if 0
 
 void Invalid_ISR(void)	__attribute__ ((interrupt ("IRQ")));
 void Uart1_ISR(void)	__attribute__ ((interrupt ("IRQ")));
@@ -230,9 +245,9 @@ void Key3_ISR(void)
 	rEXT_INT40_PEND = 0x1<<3;
 
 	Uart1_Printf("Key3 Pressed\n");
-	Uart1_Printf("App num : %d\n", getAppNum());
 	GIC_Clear_Pending_Clear(0,51);
 	GIC_Write_EOI(0, 51);
+	API_App_Change();
 }
 
 void Key4_ISR(void)
