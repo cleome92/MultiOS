@@ -41,6 +41,11 @@ HandlerIRQ:
     ldr r0, [r1, r0, lsl #2]
     blx r0
 
+	push {r0-r4, lr}
+	mov r0, lr
+	bl	debugPrintNum
+	pop	{r0-r4, lr}
+
 	pop {r0-r3, r12, lr}
 
 @ Context Save Start
@@ -64,6 +69,7 @@ HandlerIRQ:
     str	r11, [r2, #44]
     str	r12, [r2, #48]
 
+
 	mrs		r1, cpsr
 	cps		#0x1f
 	str sp, [r2, #52] @ Save sp
@@ -72,6 +78,7 @@ HandlerIRQ:
 
     mrs r3, spsr
     str r3, [r2, #64]
+	str	lr, [r2, #68]
 
     pop {r0-r3}
 
@@ -92,14 +99,12 @@ HandlerIRQ:
 	pop {r4-r7}
 @ Context Save End
 
-	push {r0-r3}
+	push {r0-r4}
 	mov r0, #0
 	bl	debugPrint
 	pop	{r0-r3}
 
 @ Context Load Start
-	push {r0-r3}
-
     @ Store the new application number
     ldr r1, =gucAppNum
     ldr r0, [r1]
@@ -132,7 +137,8 @@ HandlerIRQ:
     ldr r3, [r2, #64]
     msr spsr, r3
 
-    pop {r0-r3}
+	ldr	lr, [r2, #68]
+
 
 	push {r4-r7}
     @ Save the current application number
@@ -151,26 +157,10 @@ HandlerIRQ:
 	pop {r4-r7}
 @ Context Load End
 
-
-	push {r0-r3}
-	mov r0, #1
-	bl	debugPrint
-	pop	{r0-r3}
-
-	push {r0-r3,r4,r5}
-
-    mrs		r1, cpsr
-	cps		#0x1f
-    mov r4, sp
-    mov r5, lr
-	msr		cpsr_cxsf, r1
-
-	mov	r0, r4
-	bl debugPrintNum
-	mov	r0, r5
-	bl debugPrintNum
-
-	pop {r0-r3,r4,r5}
+	push {r0-r4, lr}
+	mov r0, lr
+	bl	debugPrintNum
+	pop	{r0-r4, lr}
 
     subs pc, lr, #4
 

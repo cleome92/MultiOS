@@ -66,7 +66,7 @@ void Main(void)
 		extern volatile unsigned int sd_insert_flag;
 		SDHC_Init();
 		SDHC_ISR_Enable(1);
-		if(!sd_insert_flag) Uart_Printf("SD 카드 삽입 요망!\n");
+		if(!sd_insert_flag) Uart_Printf("SD 移대뱶 �쎌엯 �붾쭩!\n");
 		while(!sd_insert_flag);
 		SDHC_Card_Init();
 
@@ -93,7 +93,8 @@ void Main(void)
 			Uart_Printf("\nAPP0 RUN\n", x);
 			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
 			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
-			CoSetASID(NUM_APP0 + 1);
+//			CoInvalidateMainTlb();
+			CoSetASID(1);
 			setAppNum(NUM_APP0);
 			Run_App(gstRN[NUM_APP0].RN[PC] , gstRN[NUM_APP0].RN[SP]);
 		}
@@ -103,7 +104,8 @@ void Main(void)
 			Uart_Printf("\nAPP1 RUN\n", x);
 			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
 			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
-			CoSetASID(NUM_APP1 + 1);
+			CoSetASID(2);
+			//CoInvalidateMainTlb();
 			setAppNum(NUM_APP1);
 			Run_App(gstRN[NUM_APP1].RN[PC] , gstRN[NUM_APP1].RN[SP]);
 		}

@@ -69,7 +69,7 @@ void Uart1_ISR(void)	__attribute__ ((interrupt ("IRQ")));
 void Timer0_ISR(void) 	__attribute__ ((interrupt ("IRQ")));
 void Key3_ISR(void)		__attribute__ ((interrupt ("IRQ")));
 void Key4_ISR(void)		__attribute__ ((interrupt ("IRQ")));
-void SDHC_ISR(void) 	__attribute__ ((interrupt ("IRQ")));
+
 #endif
 
 void (*ISR_Vector[])(void) =

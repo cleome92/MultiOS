@@ -44,12 +44,13 @@ enum Resister
     SP,
     LR,
     PC,
-    CPSR
+    CPSR,
+    LR_IRQ
 };
 
 struct T_Context
 {
-    UINT32 RN[17];
+    UINT32 RN[18];
 };
 
 extern struct T_Context gstRN[];
