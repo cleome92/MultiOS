@@ -70,7 +70,6 @@ void Main(void)
 	setAppNum(NUM_APP1);
 	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
 	SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
-	CoInvalidateMainTlb();
 
 #if 0 // SD Loading
 	{
@@ -98,22 +97,18 @@ void Main(void)
 
 		Uart_Printf("\nChoose the APP to execute [1]APP0, [2]APP1 >> ");
 		x = Uart1_Get_Char();
-		Timer0_Int_Delay(ENABLE,10);
+		Timer0_Int_Delay(ENABLE,5);
 		if(x == '1')
 		{
 			Uart_Printf("\nAPP0 RUN\n", x);
-			CoSetTTBase(TTBL0_CACHE);
-			CoSetASID(1);
-			setAppNum(NUM_APP0);
+			API_App0_Ready();
 			Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
 		}
 
 		if(x == '2')
 		{
 			Uart_Printf("\nAPP1 RUN\n", x);
-			CoSetTTBase(TTBL1_CACHE);
-			CoSetASID(2);
-			setAppNum(NUM_APP1);
+			API_App1_Ready();
 			Run_App(gstRN[NUM_APP1].RN[LR] - 4 , gstRN[NUM_APP1].RN[SP]);
 		}
 	}
