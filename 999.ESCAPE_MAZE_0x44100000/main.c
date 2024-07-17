@@ -83,7 +83,7 @@ void game(int idx)
 	}
 	else
 	{
-		Uart_Printf("\nInvalid index.\n");
+		//Uart_Printf("\nInvalid index.\n");
 		return;
 	}
 
@@ -96,14 +96,14 @@ void game(int idx)
 				break;
 			}
 
-			Uart_Printf("\nEnter direction key.\n");
+			//Uart_Printf("\nEnter direction key.\n");
 			dir = Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
 			//dir2 = Uart1_Get_Char();
 
 
 			if(dir == 119)
 			{
-				Uart_Printf("UP\n");
+				//Uart_Printf("UP\n");
 				//Lcd_Clr_Screen();
 				if(((py - step_size) < 0) || (map_arr[(py - step_size) / step_size][px / step_size] == 0)) continue;
 				//Lcd_Draw_BMP(0,0,map[0]);
@@ -114,7 +114,7 @@ void game(int idx)
 			}
 			else if(dir == 97)
 			{
-				Uart_Printf("LEFT\n");
+				//Uart_Printf("LEFT\n");
 				//Lcd_Clr_Screen();
 				//Lcd_Draw_BMP(0,0,map[0]);
 				if(((px - step_size) < 0) || (map_arr[(py / step_size)][(px - step_size) / step_size] == 0)) continue;
@@ -125,7 +125,7 @@ void game(int idx)
 			}
 			else if(dir == 115)
 			{
-				Uart_Printf("DOWN\n");
+				//Uart_Printf("DOWN\n");
 				//Lcd_Clr_Screen();
 				//Lcd_Draw_BMP(0,0,map[0]);
 				if(((py + step_size) > LCD_height) || (map_arr[(py + step_size) / step_size][px / step_size] == 0)) continue;
@@ -137,7 +137,7 @@ void game(int idx)
 			}
 			else if(dir == 100)
 			{
-				Uart_Printf("RIGHT\n");
+				//Uart_Printf("RIGHT\n");
 				//Lcd_Clr_Screen();
 				//Lcd_Draw_BMP(0,0,map[0]);
 				if(((px + step_size) > LCD_width) || (map_arr[(py / step_size)][(px + step_size) / step_size] == 0)) continue;
@@ -149,7 +149,7 @@ void game(int idx)
 			}
 			else if(dir == 32)
 			{
-				Uart_Printf("SPACE\n");
+				//Uart_Printf("SPACE\n");
 				//Lcd_Clr_Screen();
 				//Lcd_Draw_BMP(0,0,map[0]);
 				Lcd_Draw_BMP(px, py, block_blk[idx]);
@@ -159,13 +159,13 @@ void game(int idx)
 			}
 			else if(dir == 104)
 			{
-				Uart_Printf("HOWTOPLAY\n");
+				//Uart_Printf("HOWTOPLAY\n");
 				//Lcd_Clr_Screen();
 				Lcd_Draw_BMP(100,100,popup[1]);
 				for(;;)
 				{
 					// X 키로 나가기
-					Uart_Printf("\nEnter direction key.(EXIT)\n");
+					//Uart_Printf("\nEnter direction key.(EXIT)\n");
 					dir = Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
 					if(dir == 120)
 					{
@@ -173,11 +173,11 @@ void game(int idx)
 						Lcd_Draw_BMP(px,py,user[idx]);
 						break;
 					}
-					else Uart_Printf("Input is invalid.[%d]\n", dir);
+					//else Uart_Printf("Input is invalid.[%d]\n", dir);
 				}
 			}
-			else Uart_Printf("Input is invalid.[%d]\n", dir);
-			Uart_Printf("py[%d], px[%d], y[%d], x[%d] %d\n", py, px, py / step_size, px / step_size, map_arr[py/step_size][px/step_size]);
+			//else Uart_Printf("Input is invalid.[%d]\n", dir);
+			//Uart_Printf("py[%d], px[%d], y[%d], x[%d] %d\n", py, px, py / step_size, px / step_size, map_arr[py/step_size][px/step_size]);
 			//Delay(10);
 
 		}
@@ -185,7 +185,7 @@ void game(int idx)
 
 void Main(void)
 {
-	Uart_Printf(">>APP0 => LCD Display\n\n");
+	//Uart_Printf(">>APP0 => LCD Display\n\n");
 
 	ArrWinInfo[0].bpp_mode = BPPMODE_16BPP_565;
 	ArrWinInfo[0].bytes_per_pixel = 2;
