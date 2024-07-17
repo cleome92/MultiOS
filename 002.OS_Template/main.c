@@ -57,7 +57,7 @@ void Main(void)
 	GIC_Set_Priority_Mask(0,0xFF);
 	GIC_Distributor_Enable(1);
 	Key_ISR_Enable(ENABLE);
-	Timer0_Int_Delay(ENABLE,20);
+
 
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
@@ -81,17 +81,33 @@ void Main(void)
 
 	for(;;)
 	{
+		unsigned char x;
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
 		gstRN[NUM_APP1].RN[SP] = STACK_BASE_APP1;
 		gstRN[NUM_APP0].RN[LR] = RAM_APP0 + 4;
 		gstRN[NUM_APP1].RN[LR] = RAM_APP0 + 4;
 
+		Uart_Printf("\nChoose the APP to execute [1]APP0, [2]APP1 >> ");
+		x = Uart1_Get_Char();
+		Timer0_Int_Delay(ENABLE,10);
+		if(x == '1')
+		{
+			Uart_Printf("\nAPP0 RUN\n", x);
+			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
+			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+			CoSetASID(1);
+			setAppNum(NUM_APP0);
+			Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
+		}
 
-		Uart_Printf("\nAPP0 RUN 0\n");
-		SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
-		SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
-		CoSetASID(1);
-		setAppNum(NUM_APP0);
-		Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
+		if(x == '2')
+		{
+			Uart_Printf("\nAPP1 RUN\n", x);
+			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
+			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
+			CoSetASID(2);
+			setAppNum(NUM_APP1);
+			Run_App(gstRN[NUM_APP1].RN[LR] - 4 , gstRN[NUM_APP1].RN[SP]);
+		}
 	}
 }
