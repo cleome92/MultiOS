@@ -269,7 +269,6 @@ void Timer0_ISR(void)
 	GIC_Clear_Pending_Clear(0,69);
 	GIC_Write_EOI(0, 69);
 
-//	LED_Display(value);
-//	value = (value + 1) % 4;
-//	Uart1_Printf("Timer Call\n");
+	LED_Display(value);
+	value = (value + 1) % 4;
 }

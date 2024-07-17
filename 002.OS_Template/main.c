@@ -62,6 +62,15 @@ void Main(void)
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
 
+	// TTLB0 설정
+	setAppNum(NUM_APP0);
+	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
+	SetTransTable_MultiOS(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+	// TTLB1 설정
+	setAppNum(NUM_APP1);
+	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
+	SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
+	CoInvalidateMainTlb();
 
 #if 0 // SD Loading
 	{
@@ -93,8 +102,7 @@ void Main(void)
 		if(x == '1')
 		{
 			Uart_Printf("\nAPP0 RUN\n", x);
-			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+			CoSetTTBase(TTBL0_CACHE);
 			CoSetASID(1);
 			setAppNum(NUM_APP0);
 			Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
@@ -103,8 +111,7 @@ void Main(void)
 		if(x == '2')
 		{
 			Uart_Printf("\nAPP1 RUN\n", x);
-			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
+			CoSetTTBase(TTBL1_CACHE);
 			CoSetASID(2);
 			setAppNum(NUM_APP1);
 			Run_App(gstRN[NUM_APP1].RN[LR] - 4 , gstRN[NUM_APP1].RN[SP]);

@@ -23,6 +23,12 @@
 
 #define SECTOR_SIZE 		512
 #define ALIGN_SECTOR(x)	 	((((x+(SECTOR_SIZE-1))&~(SECTOR_SIZE-1))/SECTOR_SIZE))
+
+#define TTBL0 		(0x44000000)
+#define TTBL1 		(0x44008000)
+#define TTBL0_CACHE (TTBL0 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
+#define TTBL1_CACHE (TTBL1 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
+
 typedef unsigned char UINT8;
 typedef unsigned int UINT32;
 
@@ -63,5 +69,6 @@ extern void debugPrint(UINT8 x);
 extern void debugPrintNum(UINT32 x);
 void API_App0_Ready(void);
 void API_App1_Ready(void);
+void SetTransTable_MultiOS(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaStart, unsigned int attr);
 //void (*API_Init[])(void);
 #endif

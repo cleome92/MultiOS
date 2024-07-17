@@ -1,6 +1,6 @@
 #include "cp15.h"
 #include "option.h"
-
+#include "multiOS.h"
 /* PA conversion */
 
 unsigned int CoGetPAfromVA(unsigned int va, int mode)
@@ -150,8 +150,8 @@ void SetTransTable(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaS
 	
 	uPaStart &= ~0xfffff;
 	uVaStart &= ~0xfffff;
-	
 	pTT = (unsigned int *)MMU_PAGE_TABLE_BASE+(uVaStart>>20);
+
 	nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
 
 	for(i=0; i<=nNumOfSec; i++)
