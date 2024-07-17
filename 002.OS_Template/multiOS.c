@@ -91,7 +91,7 @@ void API_App_Change(void)
 //void (*API_Init[MAX_APP_NUM])(void);
 void API_App0_Ready(void)
 {
-	Uart_Printf("\nAPP0 RUN 0\n");
+//	Uart_Printf("\nAPP0 RUN 0\n");
 	SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
 	SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
 	CoSetASID(1);
@@ -99,7 +99,7 @@ void API_App0_Ready(void)
 }
 void API_App1_Ready(void)
 {
-	Uart_Printf("\nAPP1 RUN 1\n");
+//	Uart_Printf("\nAPP1 RUN 1\n");
 	SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
 	SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
 	CoSetASID(2);

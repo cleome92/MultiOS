@@ -45,6 +45,7 @@ HandlerIRQ:
 
 	pop {r0-r3, r12, lr}
 
+
 @ Context Save Start
 	push {r0-r3}
     @ Save the current application number
@@ -74,8 +75,8 @@ HandlerIRQ:
 	msr		cpsr_cxsf, r1
 
     mrs r3, spsr
-    str r3, [r2, #64]
-	str	lr, [r2, #68]
+    str r3, [r2, #64]	@ Save SPSR
+	str	lr, [r2, #68]	@ Svae LR_IRQ
 
     pop {r0-r3}
 
@@ -100,15 +101,15 @@ HandlerIRQ:
 
 @ Context Load Start
     @ Store the new application number
-    push {r0-r3, lr}
+    push {r0-r4, lr}
     ldr r0,= getNextAppNum
 	blx r0
-	mov r4, r0
-	pop {r0-r3, lr}
+	mov r5, r0
+	pop {r0-r4, lr}
 
 	@ Get the new context load address
     ldr r1, =gpaunContextAddress
-	ldr r2, [r1, r4, lsl #2]
+	ldr r2, [r1, r5, lsl #2]
 
     @ Load context
     ldr	r4, [r2, #16]
@@ -120,8 +121,6 @@ HandlerIRQ:
     ldr	r10, [r2, #40]
     ldr	r11, [r2, #44]
     ldr	r12, [r2, #48]
-@    ldr	r13, [r2, #52]
-@    ldr	r14, [r2, #56]
 
 	mrs		r1, cpsr
 	cps		#0x1f
@@ -129,37 +128,39 @@ HandlerIRQ:
     ldr lr, [r2, #56]
 	msr		cpsr_cxsf, r1
 
-    ldr r3, [r2, #64]
-    cmp r3, #0
-    msrne spsr, r3
+    ldr r3, [r2, #64]	@spsr
 
+    cmp r3, #0
+
+	ldreq	r0, =0x1f	@처음 APP 스위칭시
+	msreq 	spsr, r0
+
+    msrne spsr, r3		@기존 기동중인 APP 있을 경우
 	ldr	lr, [r2, #68]
 
-
-
 	push {r4-r7}
+
     @ Save the current application number
-    push {r0-r3, lr}
+    push {r0-r5, r12, lr}
     ldr r0,= getNextAppNum
 	blx r0
-	mov r4, r0
-	pop {r0-r3, lr}
+	mov r7, r0
+	pop {r0-r5, r12, lr}
 
     @ Get the current context storage address
     ldr r5, =gpaunContextAddress
-    ldr r6, [r5, r4, lsl #2]
+    ldr r6, [r5, r7, lsl #2]
 
 	ldr	r0, [r6, #0]
     ldr	r1, [r6, #4]
     ldr	r2, [r6, #8]
 	ldr	r3, [r6, #12]
 
-	cmp	r4, #0
 	pop {r4-r7}
 @ Context Load End
 
 
-	push {r0-r4, lr}
+	push {r0-r5, r12, lr}
 
     ldr r0,= getNextAppNum
 	blx r0
@@ -167,10 +168,16 @@ HandlerIRQ:
 	cmp r0, #0
 	beq	4f
 
+
+
+
+
+
 3:
 	ldr r0,= API_App1_Ready
 	blx r0
-	pop {r0-r4, lr}
+	pop {r0-r5, r12, lr}
+
 	cmp lr, #0
 	beq 2f
 1:
@@ -182,12 +189,13 @@ HandlerIRQ:
 4:
 	ldr r0,= API_App0_Ready
 	blx r0
-	pop {r0-r4, lr}
+	pop {r0-r5, r12, lr}
+
 	cmp lr, #0
-	beq 2f
-1:
+	beq 6f
+5:
     subs pc, lr, #4
-2:
+6:
 	cps		#0x1f
 	subs pc, lr, #4
 

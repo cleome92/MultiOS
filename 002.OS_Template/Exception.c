@@ -245,7 +245,7 @@ void Key3_ISR(void)
 {
 	rEXT_INT40_PEND = 0x1<<3;
 
-	Uart1_Printf("Key3 Pressed\n");
+//	Uart1_Printf("Key3 Pressed\n");
 	GIC_Clear_Pending_Clear(0,51);
 	GIC_Write_EOI(0, 51);
 //	API_App_Change();
@@ -269,6 +269,7 @@ void Timer0_ISR(void)
 	GIC_Clear_Pending_Clear(0,69);
 	GIC_Write_EOI(0, 69);
 
-	LED_Display(value);
-	value = (value + 1) % 4;
+//	LED_Display(value);
+//	value = (value + 1) % 4;
+//	Uart1_Printf("Timer Call\n");
 }

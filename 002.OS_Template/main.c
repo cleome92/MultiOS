@@ -57,11 +57,11 @@ void Main(void)
 	GIC_Set_Priority_Mask(0,0xFF);
 	GIC_Distributor_Enable(1);
 	Key_ISR_Enable(ENABLE);
+	Timer0_Int_Delay(ENABLE,20);
 
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
-//	API_Init[0] = &API_App0_Ready;
-//	API_Init[1] = &API_App1_Ready;
+
 
 #if 0 // SD Loading
 	{
@@ -81,14 +81,13 @@ void Main(void)
 
 	for(;;)
 	{
-		unsigned char x;
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
 		gstRN[NUM_APP1].RN[SP] = STACK_BASE_APP1;
 		gstRN[NUM_APP0].RN[LR] = RAM_APP0 + 4;
 		gstRN[NUM_APP1].RN[LR] = RAM_APP0 + 4;
 
 
-		Uart_Printf("\nAPP0 RUN\n", x);
+		Uart_Printf("\nAPP0 RUN 0\n");
 		SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
 		SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
 		CoSetASID(1);
