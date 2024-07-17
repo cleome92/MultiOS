@@ -60,6 +60,8 @@ void Main(void)
 
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
+//	API_Init[0] = &API_App0_Ready;
+//	API_Init[1] = &API_App1_Ready;
 
 #if 0 // SD Loading
 	{
@@ -82,32 +84,15 @@ void Main(void)
 		unsigned char x;
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
 		gstRN[NUM_APP1].RN[SP] = STACK_BASE_APP1;
-		gstRN[NUM_APP0].RN[PC] = RAM_APP0;
-		gstRN[NUM_APP1].RN[PC] = RAM_APP0;
+		gstRN[NUM_APP0].RN[LR] = RAM_APP0 + 4;
+		gstRN[NUM_APP1].RN[LR] = RAM_APP0 + 4;
 
-		Uart_Printf("\n실행할 APP을 선택하시오 [1]APP0, [2]APP1 >> ");
-		x = Uart1_Get_Char();
 
-		if(x == '1')
-		{
-			Uart_Printf("\nAPP0 RUN\n", x);
-			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
-//			CoInvalidateMainTlb();
-			CoSetASID(1);
-			setAppNum(NUM_APP0);
-			Run_App(gstRN[NUM_APP0].RN[PC] , gstRN[NUM_APP0].RN[SP]);
-		}
-
-		if(x == '2')
-		{
-			Uart_Printf("\nAPP1 RUN\n", x);
-			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
-			CoSetASID(2);
-			//CoInvalidateMainTlb();
-			setAppNum(NUM_APP1);
-			Run_App(gstRN[NUM_APP1].RN[PC] , gstRN[NUM_APP1].RN[SP]);
-		}
+		Uart_Printf("\nAPP0 RUN\n", x);
+		SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
+		SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+		CoSetASID(1);
+		setAppNum(NUM_APP0);
+		Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
 	}
 }

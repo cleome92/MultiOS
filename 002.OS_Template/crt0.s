@@ -30,6 +30,8 @@ __start:
 	.extern gpaunContextAddress
 	.extern debugPrint
 	.extern debugPrintNum
+	.extern RAM_APP0
+	.extern STACK_BASE_APP1
 HandlerIRQ:
     push {r0-r3, r12, lr}
 
@@ -40,11 +42,6 @@ HandlerIRQ:
     and r0, r0, r2
     ldr r0, [r1, r0, lsl #2]
     blx r0
-
-	push {r0-r4, lr}
-	mov r0, lr
-	bl	debugPrintNum
-	pop	{r0-r4, lr}
 
 	pop {r0-r3, r12, lr}
 
@@ -99,21 +96,19 @@ HandlerIRQ:
 	pop {r4-r7}
 @ Context Save End
 
-	push {r0-r4}
-	mov r0, #0
-	bl	debugPrint
-	pop	{r0-r3}
+
 
 @ Context Load Start
     @ Store the new application number
-    ldr r1, =gucAppNum
-    ldr r0, [r1]
+    push {r0-r3, lr}
+    ldr r0,= getNextAppNum
+	blx r0
+	mov r4, r0
+	pop {r0-r3, lr}
 
 	@ Get the new context load address
     ldr r1, =gpaunContextAddress
-    ldr r2, [r1, r0, lsl #2]
-
-
+	ldr r2, [r1, r4, lsl #2]
 
     @ Load context
     ldr	r4, [r2, #16]
@@ -125,8 +120,8 @@ HandlerIRQ:
     ldr	r10, [r2, #40]
     ldr	r11, [r2, #44]
     ldr	r12, [r2, #48]
-    ldr	r13, [r2, #52]
-    ldr	r14, [r2, #56]
+@    ldr	r13, [r2, #52]
+@    ldr	r14, [r2, #56]
 
 	mrs		r1, cpsr
 	cps		#0x1f
@@ -135,15 +130,20 @@ HandlerIRQ:
 	msr		cpsr_cxsf, r1
 
     ldr r3, [r2, #64]
-    msr spsr, r3
+    cmp r3, #0
+    msrne spsr, r3
 
 	ldr	lr, [r2, #68]
 
 
+
 	push {r4-r7}
     @ Save the current application number
-    ldr r4, =gucAppNum
-    ldr r4, [r4]
+    push {r0-r3, lr}
+    ldr r0,= getNextAppNum
+	blx r0
+	mov r4, r0
+	pop {r0-r3, lr}
 
     @ Get the current context storage address
     ldr r5, =gpaunContextAddress
@@ -154,15 +154,46 @@ HandlerIRQ:
     ldr	r2, [r6, #8]
 	ldr	r3, [r6, #12]
 
+	cmp	r4, #0
 	pop {r4-r7}
 @ Context Load End
 
-	push {r0-r4, lr}
-	mov r0, lr
-	bl	debugPrintNum
-	pop	{r0-r4, lr}
 
+	push {r0-r4, lr}
+
+    ldr r0,= getNextAppNum
+	blx r0
+	mov r4, r0
+	cmp r0, #0
+	beq	4f
+
+3:
+	ldr r0,= API_App1_Ready
+	blx r0
+	pop {r0-r4, lr}
+	cmp lr, #0
+	beq 2f
+1:
     subs pc, lr, #4
+2:
+	cps		#0x1f
+	subs pc, lr, #4
+
+4:
+	ldr r0,= API_App0_Ready
+	blx r0
+	pop {r0-r4, lr}
+	cmp lr, #0
+	beq 2f
+1:
+    subs pc, lr, #4
+2:
+	cps		#0x1f
+	subs pc, lr, #4
+
+
+
+
 
 @--------------------------------------------------
 @ Exception Handler
