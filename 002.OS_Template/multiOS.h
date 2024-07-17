@@ -38,7 +38,7 @@ enum Resister
     R7,
     R8,
     R9,
-    R10,
+    R10 = 10,
     R11,
     R12,
     SP,
@@ -61,4 +61,7 @@ extern UINT8 getAppNum(void);
 extern void setAppNum(UINT8 num);
 extern void debugPrint(UINT8 x);
 extern void debugPrintNum(UINT32 x);
+void API_App0_Ready(void);
+void API_App1_Ready(void);
+//void (*API_Init[])(void);
 #endif
