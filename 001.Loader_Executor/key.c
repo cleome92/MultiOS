@@ -14,7 +14,7 @@ int Key_Get_Key_Pressed(void)
 	return Macro_Extract_Area(~rGPX0DAT, 0x3, 3);
 }
 
-void dw(void)
+void Key_Wait_Key_Released(void)
 {
 	while(Macro_Extract_Area(~rGPX0DAT, 0x3, 3) != 0);
 }
