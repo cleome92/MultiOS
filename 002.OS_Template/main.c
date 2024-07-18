@@ -62,13 +62,23 @@ void Main(void)
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
 
+	// TTLB0 �ㅼ젙
+	setAppNum(NUM_APP0);
+	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
+	SetTransTable_MultiOS(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+	CoInvalidateMainTlb();
+	// TTLB1 �ㅼ젙
+	setAppNum(NUM_APP1);
+	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
+	SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
+	CoInvalidateMainTlb();
 
 #if 0 // SD Loading
 	{
 		extern volatile unsigned int sd_insert_flag;
 		SDHC_Init();
 		SDHC_ISR_Enable(1);
-		if(!sd_insert_flag) Uart_Printf("SD 移대뱶 �쎌엯 �붾쭩!\n");
+		if(!sd_insert_flag) Uart_Printf("SD 燁삳�諭�占쎌럩��占쎈뗀彛�\n");
 		while(!sd_insert_flag);
 		SDHC_Card_Init();
 
@@ -89,24 +99,18 @@ void Main(void)
 
 		Uart_Printf("\nChoose the APP to execute [1]APP0, [2]APP1 >> ");
 		x = Uart1_Get_Char();
-		Timer0_Int_Delay(ENABLE,10);
+		Timer0_Int_Delay(ENABLE,5);
 		if(x == '1')
 		{
 			Uart_Printf("\nAPP0 RUN\n", x);
-			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
-			CoSetASID(1);
-			setAppNum(NUM_APP0);
+			API_App0_Ready();
 			Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
 		}
 
 		if(x == '2')
 		{
 			Uart_Printf("\nAPP1 RUN\n", x);
-			SetTransTable(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
-			SetTransTable(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
-			CoSetASID(2);
-			setAppNum(NUM_APP1);
+			API_App1_Ready();
 			Run_App(gstRN[NUM_APP1].RN[LR] - 4 , gstRN[NUM_APP1].RN[SP]);
 		}
 	}

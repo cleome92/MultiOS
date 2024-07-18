@@ -47,7 +47,7 @@ HandlerIRQ:
 
 
 @ Context Save Start
-	push {r0-r3}
+	push	{r0-r3}
     @ Save the current application number
     ldr r0, =gucAppNum
     ldr r0, [r0]
@@ -66,7 +66,6 @@ HandlerIRQ:
     str	r10, [r2, #40]
     str	r11, [r2, #44]
     str	r12, [r2, #48]
-
 
 	mrs		r1, cpsr
 	cps		#0x1f
@@ -150,7 +149,6 @@ HandlerIRQ:
     @ Get the current context storage address
     ldr r5, =gpaunContextAddress
     ldr r6, [r5, r7, lsl #2]
-
 	ldr	r0, [r6, #0]
     ldr	r1, [r6, #4]
     ldr	r2, [r6, #8]
@@ -160,45 +158,35 @@ HandlerIRQ:
 @ Context Load End
 
 
-	push {r0-r5, r12, lr}
+@ Application Switching
+SwitchApp:
+    push {r0-r5, r12, lr}
 
-    ldr r0,= getNextAppNum
-	blx r0
-	mov r4, r0
-	cmp r0, #0
-	beq	4f
+    ldr r0, =getNextAppNum
+    blx r0
+    mov r4, r0
+    cmp r0, #0
+    beq App0
 
-
-
-
-
-
-3:
-	ldr r0,= API_App1_Ready
-	blx r0
-	pop {r0-r5, r12, lr}
-
-	cmp lr, #0
-	beq 2f
-1:
+App1:
+    ldr r0, =API_App1_Ready
+    blx r0
+    pop {r0-r5, r12, lr}
+    cmp lr, #0
+    beq Default
     subs pc, lr, #4
-2:
-	cps		#0x1f
-	subs pc, lr, #4
 
-4:
-	ldr r0,= API_App0_Ready
-	blx r0
-	pop {r0-r5, r12, lr}
-
-	cmp lr, #0
-	beq 6f
-5:
+App0:
+    ldr r0, =API_App0_Ready
+    blx r0
+    pop {r0-r5, r12, lr}
+    cmp lr, #0
+    beq Default
     subs pc, lr, #4
-6:
-	cps		#0x1f
-	subs pc, lr, #4
 
+Default:
+    cps #0x1f
+    subs pc, lr, #4
 
 
 
