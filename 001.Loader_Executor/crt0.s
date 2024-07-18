@@ -77,13 +77,17 @@ HandlerPabort:
 	ldmfd	sp!,{r0-r3, r12, lr}
 	subs	pc, lr, #4
 
+	.extern SVC_Handler
 HandlerSVC:
-	stmfd	sp!,{r0-r3, r12, lr}
-	sub 	r0, lr, #4
-	mrs		r1, spsr
-	and		r1, r1, #0x1f
-	bl		SVC_Handler
-	ldmfd	sp!,{r0-r3, r12, pc}^
+	STMFD SP!, {R4, LR}
+
+	LDR r4, [LR, #-4] @ scratch가 아닌 곳에 담아야 함, SVC 명령 읽어내기
+	BIC R4, R4, #0xFF000000 @ 하위 비트 clear, SVC 명령에서 숫자부분만 남기기 (인덱스 번호)
+	LDR R12, =SVC_Handler
+	LDR LR, [R12, R4, LSL #2] @r12(SVC_handler) + r4(인덱스 번호) * 4 = 함수 주소
+	BLX LR @ 번호에 맞는 해당 함수  호출 (R0 ~ R3은 그대로 전달해야 함)
+
+	LDMFD SP!, {R4, PC}^
 
 @--------------------------------------------------
 @ Reset Handler Routine

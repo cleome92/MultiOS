@@ -16,6 +16,7 @@ void Uart1_Send_String(const char *pt)
 	while(*pt) Uart1_Send_Byte(*pt++);
 }
 
+
 void Uart1_Printf(const char *fmt,...)
 {
 	va_list ap;

@@ -42,11 +42,13 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 	for(;;);
 }
 
+/*
 void SVC_Handler(unsigned int addr, unsigned int mode)
 {
 	Uart_Printf("SVC-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
 	Uart_Printf("SVC-ID[%u]\n", Macro_Extract_Area(*(unsigned int *)addr, 0xffffff, 0));
 }
+*/
 
 void Invalid_ISR(void)	__attribute__ ((interrupt ("IRQ")));
 void Uart1_ISR(void)	__attribute__ ((interrupt ("IRQ")));
@@ -255,3 +257,23 @@ void Timer0_ISR(void)
 	LED_Display(value);
 	value = (value + 1) % 4;
 }
+
+// SVC System Call 구현
+void _SVC_Uart_Printf(const char *fmt,...)
+{
+	// Uart1_Printf("[SVC Uart Printf]"); // 이거 쓰면 결과값 튄다
+	Uart1_Printf(fmt);
+}
+
+int _SVC_Uart1_GetIntNum(void)
+{
+	Uart_Printf("[SVC Uart GetIntNum]");
+	int res = Uart1_GetIntNum();
+	return res;
+}
+
+void * SVC_Handler[] = {
+		(void *)_SVC_Uart_Printf,
+		(void *)_SVC_Uart1_GetIntNum
+};
+
