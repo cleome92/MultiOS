@@ -2,7 +2,9 @@
 
 extern void SVC_Uart_Printf(const char *fmt,...);
 extern int SVC_Uart1_GetIntNum(void);
+extern char SVC_Uart1_Get_Pressed(void);
 
+#define NOINPUT ((char)(0xFF))
 int Main(void)
 {
 	// calculator app
@@ -11,18 +13,35 @@ int Main(void)
 	// 2. Uart1_GetIntNum() -> 1¹ø
 
 	SVC_Uart_Printf(">>Caculator APP\n");
-	int op1, op2, operator;
+	int op1 = NOINPUT, op2 = NOINPUT, operator = NOINPUT;
 
 	for(;;)
 	{
 		SVC_Uart_Printf("======================\n");
 		SVC_Uart_Printf("Enter operator. (1 : add, 2 : sub, 3 : mul, 4 : div)>> ");
-		operator = SVC_Uart1_GetIntNum();
+
+#if 0
+		while (operator == NOINPUT)
+		{
+			operator = SVC_Uart1_Get_Pressed();
+		}
 
 		SVC_Uart_Printf("Enter two operands.>> ");
-		op1 = SVC_Uart1_GetIntNum();
-		op2 = SVC_Uart1_GetIntNum();
-
+		while (op1 == NOINPUT)
+		{
+			op1 = SVC_Uart1_Get_Pressed();
+		}
+		while (op2 == NOINPUT)
+		{
+			op2 = SVC_Uart1_Get_Pressed();
+		}
+#endif
+#if 1
+		operator = Uart1_GetIntNum();
+		SVC_Uart_Printf("Enter two operands.>> ");
+		op1 = Uart1_GetIntNum();
+		op2 = Uart1_GetIntNum();
+#endif
 		SVC_Uart_Printf("Result >> ");
 		if(operator == 1)SVC_Uart_Printf("%d\n", op1 + op2);
 		else if(operator == 2) SVC_Uart_Printf("%d\n", op1 - op2);
@@ -37,7 +56,11 @@ int Main(void)
 		}
 		else SVC_Uart_Printf("Invalid operand.\n");
 		SVC_Uart_Printf("\n");
-
+#if 0
+		operator = NOINPUT;
+		op1 = NOINPUT;
+		op2 = NOINPUT;
+#endif
 	}
 
 	return 0;

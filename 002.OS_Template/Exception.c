@@ -24,7 +24,7 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
 
 #if 0
-	for(;;); /* 占쏙옙占쏙옙占쏙옙 占쏙옙占싹울옙 占쏙옙占쏙옙 占쌍소뤄옙 占쏙옙占쏙옙占싹듸옙占쏙옙 占쌘들러占쏙옙 占쏙옙占쏙옙 */
+	for(;;); /* �좎룞�쇿뜝�숈삕�좎룞���좎룞�쇿뜝�뱀슱���좎룞�쇿뜝�숈삕 �좎뙇�뚮쨪���좎룞�쇿뜝�숈삕�좎떦�몄삕�좎룞���좎뙓�ㅻ윭�좎룞���좎룞�쇿뜝�숈삕 */
 #endif
 }
 
@@ -42,12 +42,30 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
 	for(;;);
 }
-
-void SVC_Handler(unsigned int addr, unsigned int mode)
+// SVC System Call 구현
+void _SVC_Uart_Printf(const char *fmt,...)
 {
-	Uart_Printf("SVC-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
-	Uart_Printf("SVC-ID[%u]\n", Macro_Extract_Area(*(unsigned int *)addr, 0xffffff, 0));
+	Uart1_Printf(fmt);
 }
+
+int _SVC_Uart1_GetIntNum(void)
+{
+	int res = Uart1_GetIntNum();
+	return res;
+}
+
+char _SVC_Uart1_Get_Pressed(void)
+{
+	if(Macro_Check_Bit_Clear(rUTRSTAT1,0)) return 0xFF;
+	return rURXH1;
+}
+
+void *SVC_Handler[] =
+{
+	(void *)_SVC_Uart_Printf,
+	(void *)_SVC_Uart1_GetIntNum,
+	(void *)_SVC_Uart1_Get_Pressed
+};
 
 #if 1
 

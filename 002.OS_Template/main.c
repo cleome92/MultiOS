@@ -47,11 +47,11 @@ void Main(void)
 
 	Lcd_Init();
 	Lcd_Win_Init(0, 1);
-	Lcd_Brightness_Control(8);
+	Lcd_Brightness_Control(1);
 
 	Lcd_Select_Display_Frame_Buffer(0, 0);
 	Lcd_Select_Draw_Frame_Buffer(0, 0);
-	Lcd_Draw_Back_Color(GREEN);
+	Lcd_Draw_Back_Color(BLUE);
 
 	GIC_CPU_Interface_Enable(0,1);
 	GIC_Set_Priority_Mask(0,0xFF);
@@ -78,7 +78,7 @@ void Main(void)
 		extern volatile unsigned int sd_insert_flag;
 		SDHC_Init();
 		SDHC_ISR_Enable(1);
-		if(!sd_insert_flag) Uart_Printf("SD 燁삳�諭�占쎌럩��占쎈뗀彛�\n");
+		if(!sd_insert_flag) Uart_Printf("SD 카드 삽입 요망!\n");
 		while(!sd_insert_flag);
 		SDHC_Card_Init();
 

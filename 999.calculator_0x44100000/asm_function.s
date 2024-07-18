@@ -21,6 +21,10 @@ SVC_Uart1_GetIntNum:
 	SVC 1
 	BX 	LR
 
+	.global SVC_Uart1_Get_Pressed
+SVC_Uart1_Get_Pressed:
+	SVC 2
+	BX 	LR
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ unsigned int PABT_Falut_Status(void)
 @ 명령어 Fault 발생 이유를 리턴
