@@ -5,7 +5,7 @@ VERSION			= 4.8.1
 TARGET			= arm-none-eabi
 
 # Project name & Link script
-OUT_FILE_NAME 	= escape_maze_0x44100000
+OUT_FILE_NAME 	= multi_app0_0x44100000
 LDS_FILE_NAME	= dram_0x44100000.lds
 
 # Compiler & Linker Option

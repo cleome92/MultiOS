@@ -1,19 +1,11 @@
 #include "Device_Driver.h"
 
-#include ".\images\image0.h"
-#include ".\images\img101.h"
-#include ".\images\nct127_walk.h"
-#include ".\images\img01.h"
-#include ".\images\how_to_play.h"
-#include ".\images\map1.h"
-#include ".\images\map2.h"
-#include ".\images\ghost_red.h"
-#include ".\images\ghost_green.h"
-#include ".\images\block_black.h"
-#include ".\images\block_black2.h"
-#include ".\images\block_blue.h"
-#include ".\images\block_blue2.h"
 #include ".\images\success.h"
+#include ".\images\how_to_play.h"
+#include ".\images\map2.h"
+#include ".\images\ghost_green.h"
+#include ".\images\block_black2.h"
+#include ".\images\block_blue2.h"
 #include ".\images\Logo.h"
 
 #include ".\map_array\map1_arr.h"
@@ -47,11 +39,11 @@ void SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num);
 #define LCD_width 1000
 #define LCD_height 600
 
-const unsigned short * img[]={Logo, nct127_walk};
-const unsigned short * map[] = {map1, map2};
-const unsigned short * user[] = {ghost_red, ghost_green};
-const unsigned short * block_blk[] = {block_black, block_black2};
-const unsigned short * block_blu[] = {block_blue, block_blue2};
+const unsigned short * img[]={Logo};
+const unsigned short * map[] = {map2};
+const unsigned short * user[] = {ghost_green};
+const unsigned short * block_blk[] = {block_black2};
+const unsigned short * block_blu[] = {block_blue2};
 const unsigned short * popup[] = {success, how_to_play};
 int px, py, xtmp, ytmp, step_size;
 int startY, goalX, goalY;
@@ -77,6 +69,7 @@ void game(int idx)
 	int map_arr[25][41];
 
 	int i, j;
+	/**
 	if(idx == 0)
 	{
 		for(i = 0; i < 13; i++)
@@ -87,7 +80,8 @@ void game(int idx)
 			}
 		}
 	}
-	else if(idx == 1)
+	*/
+	if(idx == 0)
 	{
 		for(i = 0; i < 25; i++)
 		{
@@ -215,8 +209,6 @@ void Main(void)
 	SVC_Key_Poll_Init();
 	//Key_Poll_Init();
 
-	SVC_Uart_Printf(">>check\n\n");
-
 	//SVC_Lcd_Select_Display_Frame_Buffer(0, 0);
 	//SVC_Lcd_Select_Draw_Frame_Buffer(0, 0);
 	Lcd_Select_Display_Frame_Buffer(0, 0);
@@ -227,16 +219,9 @@ void Main(void)
 	SVC_Key_Wait_Key_Released();
 	SVC_Key_Wait_Key_Pressed();
 
-	// Stage 1
-	var_init(50);
-	game(0);
-
-	SVC_Key_Wait_Key_Released();
-	SVC_Key_Wait_Key_Pressed();
-
 	// stage 2
 	var_init(25);
-	game(1);
+	game(0);
 
 	for(;;){}
 
