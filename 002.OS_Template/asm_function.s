@@ -136,7 +136,13 @@ loadContext:
 	ldr		r1,	[r0, #64]
 	msr		cpsr_cxsf, r1
 	ldmdb	r0, {r0-r15}^
-@	ldr		lr,	[r0, #60]
-@	bx 		lr
+
+
+	.global CleanNInvalid
+CleanNInvalid:
+	mcr	p15,0,r0,c7,c14,1
+	mcr p15,0,r0,c7,c1,0
+	dsb
+	bx	lr
 
 	.end

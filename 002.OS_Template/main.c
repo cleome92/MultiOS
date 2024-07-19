@@ -66,13 +66,16 @@ void Main(void)
 	setAppNum(NUM_APP0);
 	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
 	SetTransTable_MultiOS(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+//	SetTransTable_Page(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
+//	SetTransTable_Page(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
 	CoInvalidateMainTlb();
 	// TTLB1 �ㅼ젙
 	setAppNum(NUM_APP1);
+//	SetTransTable_Page(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP1, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
+//	SetTransTable_Page(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
 	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
 	SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
 	CoInvalidateMainTlb();
-
 #if 0 // SD Loading
 	{
 		extern volatile unsigned int sd_insert_flag;
@@ -91,25 +94,24 @@ void Main(void)
 
 	for(;;)
 	{
-		unsigned char x;
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
 		gstRN[NUM_APP1].RN[SP] = STACK_BASE_APP1;
 		gstRN[NUM_APP0].RN[LR] = RAM_APP0 + 4;
 		gstRN[NUM_APP1].RN[LR] = RAM_APP0 + 4;
 
-		Uart_Printf("\nChoose the APP to execute [1]APP0, [2]APP1 >> ");
-		x = Uart1_Get_Char();
+//		setAppNum(NUM_APP0);
+		setAppNum(NUM_APP1);
 		Timer0_Int_Delay(ENABLE,5);
-		if(x == '1')
+		if(getAppNum() == NUM_APP0)
 		{
-			Uart_Printf("\nAPP0 RUN\n", x);
+			Uart_Printf("\nAPP0 RUN\n", NUM_APP0);
 			API_App0_Ready();
 			Run_App(gstRN[NUM_APP0].RN[LR] - 4 , gstRN[NUM_APP0].RN[SP]);
 		}
 
-		if(x == '2')
+		if(getAppNum() == NUM_APP1)
 		{
-			Uart_Printf("\nAPP1 RUN\n", x);
+			Uart_Printf("\nAPP1 RUN\n", NUM_APP1);
 			API_App1_Ready();
 			Run_App(gstRN[NUM_APP1].RN[LR] - 4 , gstRN[NUM_APP1].RN[SP]);
 		}

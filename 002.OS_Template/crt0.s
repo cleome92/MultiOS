@@ -221,32 +221,26 @@ HandlerPabort:
 
 	.extern SVC_Handler
 HandlerSVC:
-	STMFD SP!, {R4, LR}
-
-	LDR r4, [LR, #-4] @ scratch가 아닌 곳에 담아야 함, SVC 명령 읽어내기
-	BIC R4, R4, #0xFF000000 @ 하위 비트 clear, SVC 명령에서 숫자부분만 남기기 (인덱스 번호)
-	LDR R12, =SVC_Handler
-	LDR LR, [R12, R4, LSL #2] @r12(SVC_handler) + r4(인덱스 번호) * 4 = 함수 주소
-	BLX LR @ 번호에 맞는 해당 함수  호출 (R0 ~ R3은 그대로 전달해야 함)
-
-	LDMFD SP!, {R4, PC}^
-
-@	stmfd sp!, {r4, lr}
-@    ldr r4, [lr, #-4] @ svc 명령 읽어내기
-@    bic r4, r4, #0xff000000 @svc 명령에서 숫자부분만 남기기 (SVC_Handler 배열의 요소번호)
-@    ldr r12, =SVC_Handler
-@    ldr lr, [r12, r4, lsl #2] @ r12(SVC_Handler) + r4(요소번호) * 4 = 함수의 주소
+	stmfd sp!, {r4-r6, lr}
+	ldr r4, [lr, #-4] @ svc 명령 읽어내기
+	bic r4, r4, #0xff000000 @svc 명령에서 숫자부분만 남기기 (SVC_Handler 배열의 요소번호)
+	ldr r12, =SVC_Handler
+	ldr lr, [r12, r4, lsl #2] @ r12(SVC_Handler) + r4(요소번호) * 4 = 함수의 주소
 
     @sys 모드로 전환 (sp, lr이 sys것임에 주의해야 함)
-@	mrs		r4, cpsr
-@	cps		#0x1f
+	mov r5, sp   @ SVC SP Back up
 
-@    blx lr @ 번호에 맞는 해당 함수 호출(r0~r3은 그대로 전달해야 함)
+	mrs      r4, cpsr
+	cps      #0x1f
+	mov   r6, sp   @ SYS SP Load
 
-    @svc 모드로 전환
-@	msr		cpsr_cxsf, r4
+	msr      cpsr_cxsf, r4
+	mov sp, r6   @ SVC SP = SYS SP
+	blx lr       @ 번호에 맞는 해당 함수 호출(r0~r3은 그대로 전달해야 함)
 
-@	ldmfd sp!, {r4, pc}^
+	mov sp, r5
+
+	ldmfd sp!, {r4-r6, pc}^
 
 
 @--------------------------------------------------

@@ -295,7 +295,7 @@ void _SVC_Lcd_Clr_Screen(void)
 
 void _SVC_Lcd_Draw_BMP(int x, int y, const unsigned short int *fp)
 {
-	Uart_Printf("\n[SVC Lcd_Draw_BMP]");
+//	Uart_Printf("\n[SVC Lcd_Draw_BMP]");
 	Lcd_Draw_BMP(x, y, fp);
 }
 
@@ -317,10 +317,11 @@ void _SVC_Lcd_Init(void)
 	Lcd_Init();
 }
 
-void _SVC_Lcd_Win_Init(int id, int en)
+extern void Lcd_Win_Init_arr(int id,int en, WIN_INFO_ST win_arr[5]);
+void _SVC_Lcd_Win_Init(int id, int en, WIN_INFO_ST win_arr[5])
 {
 	Uart_Printf("\n[SVC Win Lcd Init]");
-	Lcd_Win_Init(id, en);
+	Lcd_Win_Init_arr(id, en, win_arr);
 }
 
 void _SVC_Lcd_Brightness_Control(int level)
@@ -347,6 +348,16 @@ void _SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num)
 	Lcd_Select_Display_Frame_Buffer(win_id, buf_num);
 }
 
+void _SVC_Uart1_Print_6_Paremeter(int a, int b, int c, int d, int e, int f)
+{
+	Uart_Printf("\n[SVC 6 Parameter Print : %0.3d %0.3d %0.3d %0.3d %0.3d %0.3d]", a, b, c, d, e, f);
+}
+
+char _SVC_Uart1_Get_Pressed(void)
+{
+	return Uart1_Get_Pressed();
+}
+
 void * SVC_Handler[] = {
 		(void *)_SVC_Uart_Printf,
 		(void *)_SVC_Uart1_GetIntNum,
@@ -359,6 +370,8 @@ void * SVC_Handler[] = {
 		(void *)_SVC_Lcd_Win_Init,
 		(void *)_SVC_Lcd_Brightness_Control,
 		(void *)_SVC_Key_Poll_Init,
+		(void *)_SVC_Uart1_Get_Pressed,
 		(void *)_SVC_Lcd_Select_Draw_Frame_Buffer,
-		(void *)_SVC_Lcd_Select_Display_Frame_Buffer
+		(void *)_SVC_Lcd_Select_Display_Frame_Buffer,
+		(void *)_SVC_Uart1_Print_6_Paremeter,
 };

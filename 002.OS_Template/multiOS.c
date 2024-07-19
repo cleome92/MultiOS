@@ -80,3 +80,46 @@ void SetTransTable_MultiOS(unsigned int uVaStart, unsigned int uVaEnd, unsigned 
 		}
 	}
 }
+
+void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
+{
+	UINT32 i,j;
+	UINT32* pTT1;
+    UINT32* pTT2;
+
+    UINT32 PA_1st_Idx;
+    UINT32 VA_1st_Idx;
+
+//    UINT32 PA_2st_Idx;
+//    UINT32 VA_2st_Idx;
+
+    UINT32 nNumOfSec;
+
+	PA_1st_Idx = (uPaStart & ~0xfffff) >> 20;
+	VA_1st_Idx = (uVaStart & ~0xfffff) >> 20;
+
+	nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
+
+	for(i=0; i<=nNumOfSec; i++)
+	{
+        if (getAppNum() == NUM_APP0)
+        {
+            pTT1 = (UINT32 *)TTBL0 + VA_1st_Idx + i;	// Set 1st Entry Info
+            pTT2 = (UINT32 *)(TTBL0_PAGE + i*0x400);	//
+        }
+        else
+        {
+            pTT1 = (UINT32 *)TTBL1 + VA_1st_Idx + i;
+            pTT2 = (UINT32 *)(TTBL1_PAGE + i*0x400);
+        }
+
+		*pTT1 = (UINT32)pTT2 | attr_1st;   	 				// Set 1st Descriptor Info
+        CleanNInvalid((UINT32)pTT1);
+        for (j=0; j<256; j++)
+        {
+            pTT1 = (UINT32*)pTT2 + j;						// Set 2nd Entry Info
+            *pTT1 = (PA_1st_Idx<<20 | j<<12 | attr_2nd);	// Set 2nd Descriptor Info
+            CoInvalidateITlbVA(PA_1st_Idx<<20 | j<<12);
+        }
+	}
+}
