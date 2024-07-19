@@ -42,30 +42,6 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
 	for(;;);
 }
-// SVC System Call 구현
-void _SVC_Uart_Printf(const char *fmt,...)
-{
-	Uart1_Printf(fmt);
-}
-
-int _SVC_Uart1_GetIntNum(void)
-{
-	int res = Uart1_GetIntNum();
-	return res;
-}
-
-char _SVC_Uart1_Get_Pressed(void)
-{
-	if(Macro_Check_Bit_Clear(rUTRSTAT1,0)) return 0xFF;
-	return rURXH1;
-}
-
-void *SVC_Handler[] =
-{
-	(void *)_SVC_Uart_Printf,
-	(void *)_SVC_Uart1_GetIntNum,
-	(void *)_SVC_Uart1_Get_Pressed
-};
 
 #if 1
 
@@ -290,3 +266,99 @@ void Timer0_ISR(void)
 	LED_Display(value);
 	value = (value + 1) % 4;
 }
+
+// SVC System Call 구현
+void _SVC_Uart_Printf(const char *fmt,...)
+{
+	Uart1_Printf(fmt);
+}
+
+int _SVC_Uart1_GetIntNum(void)
+{
+	Uart_Printf("\n[SVC Uart GetIntNum]");
+	int res = Uart1_GetIntNum();
+	return res;
+}
+
+char _SVC_Uart1_Get_Char(void)
+{
+	Uart_Printf("\n[SVC Uart Get_Char]");
+	char res = Uart1_Get_Char();
+	return res;
+}
+
+void _SVC_Lcd_Clr_Screen(void)
+{
+	Uart_Printf("\n[SVC Lcd_Clr_Screen]");
+	Lcd_Clr_Screen();
+}
+
+void _SVC_Lcd_Draw_BMP(int x, int y, const unsigned short int *fp)
+{
+	Uart_Printf("\n[SVC Lcd_Draw_BMP]");
+	Lcd_Draw_BMP(x, y, fp);
+}
+
+void _SVC_Key_Wait_Key_Released(void)
+{
+	Uart_Printf("\n[SVC Key_Wait_Key_Released]");
+	Key_Wait_Key_Released();
+}
+
+void _SVC_Key_Wait_Key_Pressed(void)
+{
+	Uart_Printf("\n[SVC Key_Wait_Key_Pressed]");
+	Key_Wait_Key_Pressed();
+}
+
+void _SVC_Lcd_Init(void)
+{
+	Uart_Printf("\n[SVC Lcd Init]");
+	Lcd_Init();
+}
+
+void _SVC_Lcd_Win_Init(int id, int en)
+{
+	Uart_Printf("\n[SVC Win Lcd Init]");
+	Lcd_Win_Init(id, en);
+}
+
+void _SVC_Lcd_Brightness_Control(int level)
+{
+	Uart_Printf("\n[SVC Lcd Brightness Control]");
+	Lcd_Brightness_Control(level);
+}
+
+void _SVC_Key_Poll_Init(void)
+{
+	Uart_Printf("\n[SVC Key Poll Init]");
+	Key_Poll_Init();
+}
+
+void _SVC_Lcd_Select_Draw_Frame_Buffer(int win_id,int buf_num)
+{
+	Uart_Printf("\n[SVC Lcd Select Draw Frame Buffer]");
+	Lcd_Select_Draw_Frame_Buffer(win_id, buf_num);
+}
+
+void _SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num)
+{
+	Uart_Printf("\n[SVC Lcd Select Display Frame Buffer]");
+	Lcd_Select_Display_Frame_Buffer(win_id, buf_num);
+}
+
+void * SVC_Handler[] = {
+		(void *)_SVC_Uart_Printf,
+		(void *)_SVC_Uart1_GetIntNum,
+		(void *)_SVC_Uart1_Get_Char,
+		(void *)_SVC_Lcd_Clr_Screen,
+		(void *)_SVC_Lcd_Draw_BMP,
+		(void *)_SVC_Key_Wait_Key_Released,
+		(void *)_SVC_Key_Wait_Key_Pressed,
+		(void *)_SVC_Lcd_Init,
+		(void *)_SVC_Lcd_Win_Init,
+		(void *)_SVC_Lcd_Brightness_Control,
+		(void *)_SVC_Key_Poll_Init,
+		(void *)_SVC_Lcd_Select_Draw_Frame_Buffer,
+		(void *)_SVC_Lcd_Select_Display_Frame_Buffer
+};

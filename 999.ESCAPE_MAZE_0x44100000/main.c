@@ -110,7 +110,7 @@ void game(int idx)
 			}
 
 			//Uart_Printf("\nEnter direction key.\n");
-			dir = SVC_Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
+			dir = Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
 			//dir2 = Uart1_Get_Char();
 
 
@@ -179,7 +179,7 @@ void game(int idx)
 				{
 					// X 키로 나가기
 					//Uart_Printf("\nEnter direction key.(EXIT)\n");
-					dir = SVC_Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
+					dir = Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
 					if(dir == 120)
 					{
 						SVC_Lcd_Draw_BMP(0,0,map[idx]);
