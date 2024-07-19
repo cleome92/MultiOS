@@ -103,6 +103,16 @@ SVC_Key_Poll_Init:
 	BX 	LR
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ char Uart1_Get_Pressed(void)
+@ Get pressed uart
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	.global SVC_Uart1_Get_Pressed
+SVC_Uart1_Get_Pressed:
+	SVC 11
+	BX 	LR
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ void Lcd_Select_Draw_Frame_Buffer(int win_id,int buf_num);
 @ Key Polling Init
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

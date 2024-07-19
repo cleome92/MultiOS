@@ -120,6 +120,43 @@ void Lcd_Init(void)
 	Macro_Write_Block(rVIDCON0,0x3,0x3,0); //Display ON
 	Macro_Write_Block(rSHADOWCON,0x1f,0x1f,0);
 }
+void Lcd_Win_Init_arr(int id,int en, WIN_INFO_ST win_arr[5]) // for multi_app0(game)
+{
+	int fb_size;
+	int off_size;
+	int page_width;
+
+	fb_size 	= win_arr[id].v_sizex*win_arr[id].v_sizey*win_arr[id].bytes_per_pixel;
+	off_size 	= (win_arr[id].v_sizex - win_arr[id].p_sizex) * win_arr[id].bytes_per_pixel;
+	page_width 	= win_arr[id].p_sizex * win_arr[id].bytes_per_pixel;
+
+	winosdna(id) = ((win_arr[id].posx&0x7ff)<<11)|(win_arr[id].posy&0x7ff);
+	winosdnb(id) = (((win_arr[id].posx + win_arr[id].p_sizex-1)&0x7ff)<<11)|((win_arr[id].posy+win_arr[id].p_sizey-1)&0x7ff);
+
+	if(id == 0)
+	{
+		winosdnc(id) = (win_arr[id].p_sizex * win_arr[id].p_sizey)/2;
+	}
+	else if((id == 1)||(id == 2))
+	{
+		winosdnd(id) = (win_arr[id].p_sizex * win_arr[id].p_sizey);
+	}
+
+	winwnadd0(id) = ArrFbSel[id*2];
+	winwnadd1(id) = ArrFbSel[id*2]+fb_size;
+	winwnadd2(id) = (((off_size) & 0x1fff)<<13)|((page_width) & 0x1fff);
+
+	if(id == 0 || id == 1)
+	{
+		winwnadd0b1(id)  = ArrFbSel[id*2+1];
+		winwnadd1b1(id) = ArrFbSel[id*2]+fb_size;
+	}
+
+	winconn(id) = (0<<22)|(1<<16)|(2<<9)|(ArrWinInfo[id].bpp_mode<<2);
+
+	if(en) Macro_Set_Bit(winconn(id),0);
+	else Macro_Clear_Bit(winconn(id),0);
+}
 
 void Lcd_Win_Init(int id,int en)
 {

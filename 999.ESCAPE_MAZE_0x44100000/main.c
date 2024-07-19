@@ -10,19 +10,20 @@
 
 #include ".\map_array\map1_arr.h"
 
-extern WIN_INFO_ST ArrWinInfo[5];
+WIN_INFO_ST ArrWinInfo[5];
 extern void SVC_Uart_printf(void);
 extern char SVC_Uart1_Get_Char(void);
 extern void SVC_Lcd_Clr_Screen(void);
 extern void SVC_Lcd_Draw_BMP(int x, int y, const unsigned short int *fp);
 extern void SVC_Key_Wait_Key_Released(void);
-extern int SVC_Key_Wait_Key_Pressed(void);
+extern int  SVC_Key_Wait_Key_Pressed(void);
 extern void SVC_Lcd_Init(void);
-void SVC_Lcd_Win_Init(int id, int en);
-void SVC_Lcd_Brightness_Control(int level);
-void SVC_Key_Poll_Init(void);
-void SVC_Lcd_Select_Draw_Frame_Buffer(int win_id,int buf_num);
-void SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num);
+extern char SVC_Uart1_Get_Pressed(void);
+extern void SVC_Lcd_Win_Init(int id, int en, WIN_INFO_ST win_arr[5]);
+extern void SVC_Lcd_Brightness_Control(int level);
+extern void SVC_Key_Poll_Init(void);
+extern void SVC_Lcd_Select_Draw_Frame_Buffer(int win_id,int buf_num);
+extern void SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num);
 
 
 #define BLACK	0x0000
@@ -104,11 +105,12 @@ void game(int idx)
 			}
 
 			//Uart_Printf("\nEnter direction key.\n");
-			dir = SVC_Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
+			//dir = SVC_Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
+			dir = SVC_Uart1_Get_Pressed();
 			//dir2 = Uart1_Get_Char();
 
-
-			if(dir == 119)
+			if(dir == 0) continue;
+			else if(dir == 119)
 			{
 				//Uart_Printf("UP\n");
 				//Lcd_Clr_Screen();
@@ -173,7 +175,7 @@ void game(int idx)
 				{
 					// X 키로 나가기
 					//Uart_Printf("\nEnter direction key.(EXIT)\n");
-					dir = SVC_Uart1_Get_Char(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
+					dir = SVC_Uart1_Get_Pressed(); // 방향키는 특수 키라 두번 입력받아야 함 -> 27 91로 똑같다, WASD space로 동작
 					if(dir == 120)
 					{
 						SVC_Lcd_Draw_BMP(0,0,map[idx]);
@@ -183,15 +185,17 @@ void game(int idx)
 					//else Uart_Printf("Input is invalid.[%d]\n", dir);
 				}
 			}
-			//else Uart_Printf("Input is invalid.[%d]\n", dir);
-			SVC_Uart_Printf("py[%d], px[%d], y[%d], x[%d] %d\n", py, px, py / step_size, px / step_size, map_arr[py/step_size][px/step_size]);
-			//Delay(10);
+			SVC_Uart_Printf("y[%d], x[%d] %d\n", py / step_size, px / step_size, map_arr[py/step_size][px/step_size]);
 
 		}
 }
 
 void Main(void)
 {
+	// 할일
+	// get pressed로 바꾸기
+	// graphics, uart, key.c 파일 지우기
+
 	SVC_Uart_Printf(">>APP => Escame Maze game\n\n");
 
 	ArrWinInfo[0].bpp_mode = BPPMODE_16BPP_565;
@@ -204,25 +208,32 @@ void Main(void)
 	ArrWinInfo[0].posy = (600 - ArrWinInfo[0].p_sizey) / 2;
 
 	SVC_Lcd_Init();
-	SVC_Lcd_Win_Init(0, 1); // 전역 변수 파라미터로 넘기미 ArrWinInfo?
+	SVC_Lcd_Win_Init(0, 1, ArrWinInfo); // 전역 변수 파라미터로 넘기미 ArrWinInfo?
 	SVC_Lcd_Brightness_Control(8);
 	SVC_Key_Poll_Init();
 	//Key_Poll_Init();
 
-	//SVC_Lcd_Select_Display_Frame_Buffer(0, 0);
-	//SVC_Lcd_Select_Draw_Frame_Buffer(0, 0);
-	Lcd_Select_Display_Frame_Buffer(0, 0);
-	Lcd_Select_Draw_Frame_Buffer(0, 0);
-	SVC_Lcd_Clr_Screen();
-	SVC_Lcd_Draw_BMP(0,0,img[0]); // img 출력
+	SVC_Lcd_Select_Display_Frame_Buffer(0, 0);
+	SVC_Lcd_Select_Draw_Frame_Buffer(0, 0);
+	//Lcd_Select_Display_Frame_Buffer(0, 0);
+	//Lcd_Select_Draw_Frame_Buffer(0, 0);
 
-	SVC_Key_Wait_Key_Released();
-	SVC_Key_Wait_Key_Pressed();
+	//SVC_Key_Wait_Key_Released();
+	//SVC_Key_Wait_Key_Pressed();
 
 	// stage 2
-	var_init(25);
-	game(0);
+	for(;;)
+	{
+		SVC_Lcd_Clr_Screen();
+		SVC_Lcd_Draw_BMP(0,0,img[0]); // img 출력
+		Delay(2000);
+		while(SVC_Uart1_Get_Pressed() == 0) {}
 
-	for(;;){}
+		var_init(25);
+		game(0);
+
+		while(SVC_Uart1_Get_Pressed() == 0) {}
+	}
+
 
 }
