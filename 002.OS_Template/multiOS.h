@@ -73,8 +73,6 @@ typedef struct Page_Info{
     UINT32 App_num;
 }Page_Info;
 
-Page_Info page_entry_info[32]; // page에 관한 정보 담은 배열 ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 관련 정보
-
 extern struct T_Context gstRN[];
 extern struct T_Context * gpaunContextAddress[];
 extern UINT32 Get_User_SP(void);

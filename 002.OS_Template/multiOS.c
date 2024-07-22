@@ -1,4 +1,5 @@
 #include "multiOS.h"
+#include "device_driver.h"
 
 #define MAX_APP_NUM (2)
 #define NUM_APP0    (0)
@@ -49,7 +50,9 @@ typedef unsigned int UINT32;
 #define MAX_PAGE_NUM    (32)
 #define SET             (1)
 #define CLR             (0)
+
 UINT32 pageInfo[MAX_PAGE_NUM][3];
+Page_Info page_entry_info[32]; // page에 관한 정보 담은 배열 ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 관련 정보
 
 enum mmu
 {
@@ -59,10 +62,12 @@ enum mmu
     HDD
 };
 
+/*
 void smallPageLoading(UINT32* VA, UINT32* PA)
 {
     memcpy(VA, PA, sizeof(UINT32)*1024);
 }
+*/
 
 /*
 void demandPage(void)
@@ -92,6 +97,7 @@ void demandPage(void)
 
 
 // VA -> PA 매칭하는 함수
+/*
 void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
 {
 	UINT32 i,j;
@@ -130,6 +136,7 @@ void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 
         }
 	}
 }
+*/
 
 // VA -> PA 매칭하는 함수
 // attr_1st : 0 ~ 9번 bit
@@ -205,14 +212,16 @@ void SetTransTable_Page_parkdoyun(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStar
 */
 
 #define PAGE_TABLE_SIZE 4096
-#define SECTION_SIZE 0x100000
+//#define SECTION_SIZE 0x100000
 #define PAGE_SIZE 4096
 #define NUM_L2_ENTRIES 256
 
 
 // 페이지 테이블을 초기화하는 함수
+/*
 void init_l2_page_table(UINT32* l2_page_table) {
-    for (int i = 0; i < NUM_L2_ENTRIES; i++) {
+	UINT32 i;
+    for (i = 0; i < NUM_L2_ENTRIES; i++) {
         l2_page_table[i] = 0;
     }
 }
@@ -229,7 +238,7 @@ typedef struct {
     UINT32* l1_page_table;
     UINT32* l2_page_tables;
 } T_page_table;
-
+*/
 
 
 #define TTBR0 0xFFFFC000  // TTBR0의 가상 주소
@@ -240,6 +249,7 @@ typedef struct {
 #define L2_SHIFT (12)
 
 // 가상 주소를 실제 주소로 변환하는 함수
+/*
 UINT32 virtual_to_physical(T_page_table* page_table, UINT32 virtual_address) {
     // 1차 페이지 테이블 엔트리 인덱스 계산
     UINT32 l1_index = (virtual_address & L1_INDEX_MASK) >> L1_SHIFT;
@@ -255,7 +265,7 @@ UINT32 virtual_to_physical(T_page_table* page_table, UINT32 virtual_address) {
 
     return physical_address;
 }
-
+*/
 
 void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
 {
@@ -303,6 +313,7 @@ void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st,
 
 
 // VA 0x84100000 ~ 0x84900000 -1 => PA 0x44100000 ~ 0x44900000 -1
+/*
 UINT8 virtual_to_physical(UINT32 virtual_address)
 {
 	UINT8 appNum = getAppNum();// current app number
@@ -325,6 +336,7 @@ UINT8 virtual_to_physical(UINT32 virtual_address)
 	va19_12 = (save_addr&0xff000)>>12;
 
 }
+*/
 
 // page 적재하는 함수 작성
 // 박도윤
@@ -549,39 +561,126 @@ UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num) // page entry에서 찾기
 }
 
 
-// 아 나가셈 ㅡㅡ
-// 자리 있음요 ↓
-
-// 가세요라
-void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
+void SetTransTable_MultiOS(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaStart, unsigned int attr)
 {
-	UINT32* pTT1;
-	UINT32* pTT2;
+	int i;
+	unsigned int* pTT = 0x0;
+	unsigned int nNumOfSec;
 
-    UINT32 PA_1st_Idx = 0;
-	UINT32 PA_2nd_Idx = 0;
-    UINT32 VA_1st_Idx = 0;
-    UINT32 VA_2nd_Idx = 0;
-
-	VA_1st_Idx = (uVaStart & L1_INDEX_MASK) >> L1_SHIFT;
-	PA_1st_Idx = (uPaStart & L1_INDEX_MASK) >> L1_SHIFT;
-	VA_2nd_Idx = (uVaStart & L2_INDEX_MASK) >> L2_SHIFT;
-	PA_2nd_Idx = (uPaStart & L2_INDEX_MASK) >> L2_SHIFT;
-
+	uPaStart &= ~0xfffff;
+	uVaStart &= ~0xfffff;
 	if (getAppNum() == NUM_APP0)
 	{
-		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2)) ;			// Set 1st Entry Info
-		*pTT1 = (TTBL0_PAGE + VA_1st_Idx*PAGE_SIZE) | attr_1st;		// Set 1st Descriptor Info
+		pTT = (unsigned int *)TTBL0+(uVaStart>>20);
+	}
+	else if (getAppNum() == NUM_APP1)
+	{
+		pTT = (unsigned int *)TTBL1+(uVaStart>>20);
 	}
 	else
 	{
-		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2)) ;			// Set 1st Entry Info
-		*pTT1 = (TTBL1_PAGE + VA_1st_Idx*PAGE_SIZE) | attr_1st;		// Set 1st Descriptor Info
+		;
 	}
-
-	pTT2 = (UINT32*)((*pTT1) & 0xFFFFC00);
-	pTT2 = (UINT32*)(pTT2 + (VA_2nd_Idx<<2));								// Set 2nd Entry Info
-	*pTT2 = (PA_1st_Idx<<L1_SHIFT | PA_2nd_Idx<<L2_SHIFT | attr_2nd);		// Set 2nd Descriptor Info
-
-	CoInvalidateITlbVA(PA_1st_Idx<<L1_SHIFT | PA_2nd_Idx<<L2_SHIFT);
+	if (pTT != 0x0)
+	{
+		nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
+		for(i=0; i<=nNumOfSec; i++)
+		{
+			*pTT++ = attr|(uPaStart+(i<<20));
+		}
+	}
 }
+
+UINT32 gaucAPP[MAX_APP_NUM];
+UINT8 gucAppNum = 0;
+struct T_Context gstRN[MAX_APP_NUM];
+struct T_Context * gpaunContextAddress[MAX_APP_NUM];
+
+
+//UINT32 TTBL[MAX_APP_NUM][0x400];
+
+void debugPrint(UINT8 x)
+{
+    Uart_Printf("========Flag : %d=========\n", x);
+    UINT8 i = 0;
+    for (i = 0; i < 18; i++)
+    {
+        Uart_Printf("R[%.2d] : %.8X    %.8X\n", i, gstRN[0].RN[i], gstRN[1].RN[i]);
+    }
+
+}
+void debugPrintNum(UINT32 x)
+{
+    Uart_Printf("%.8X  =========\n", x);
+}
+
+void setAppNum(UINT8 num)
+{
+    gucAppNum = num;
+}
+UINT8 getAppNum()
+{
+    return gucAppNum;
+}
+UINT8 getNextAppNum()
+{
+    return (gucAppNum + 1) % MAX_APP_NUM;
+}
+
+
+void API_App0_Ready(void)
+{
+   CoSetASID(1);
+   CoSetTTBase(TTBL0_CACHE);
+   setAppNum(NUM_APP0);
+}
+void API_App1_Ready(void)
+{
+   CoSetASID(2);
+   CoSetTTBase(TTBL1_CACHE);
+   setAppNum(NUM_APP1);
+}
+
+void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
+{
+   UINT32 i,j;
+   UINT32* pTT1;
+    UINT32* pTT2;
+
+    UINT32 PA_1st_Idx;
+    UINT32 VA_1st_Idx;
+
+//    UINT32 PA_2st_Idx;
+//    UINT32 VA_2st_Idx;
+
+    UINT32 nNumOfSec;
+
+   PA_1st_Idx = (uPaStart & ~0xfffff) >> 20;
+   VA_1st_Idx = (uVaStart & ~0xfffff) >> 20;
+
+   nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
+
+   for(i=0; i<=nNumOfSec; i++)
+   {
+        if (getAppNum() == NUM_APP0)
+        {
+            pTT1 = (UINT32 *)TTBL0 + VA_1st_Idx + i;   // Set 1st Entry Info
+            pTT2 = (UINT32 *)(TTBL0_PAGE + i*0x400);   //
+        }
+        else
+        {
+            pTT1 = (UINT32 *)TTBL1 + VA_1st_Idx + i;
+            pTT2 = (UINT32 *)(TTBL1_PAGE + i*0x400);
+        }
+
+      *pTT1 = (UINT32)pTT2 | attr_1st;                   // Set 1st Descriptor Info
+        CleanNInvalid((UINT32)pTT1);
+        for (j=0; j<256; j++)
+        {
+            pTT1 = (UINT32*)pTT2 + j;                  // Set 2nd Entry Info
+            *pTT1 = (PA_1st_Idx<<20 | j<<12 | attr_2nd);   // Set 2nd Descriptor Info
+            CoInvalidateITlbVA(PA_1st_Idx<<20 | j<<12);
+        }
+   }
+}
+
