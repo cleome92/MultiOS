@@ -336,6 +336,7 @@ void API_App0_Ready(void)
    CoSetTTBase(TTBL0_CACHE);
    CoInvalidateMainTlb();
    setAppNum(NUM_APP0);
+   debugPrint(1);
 }
 void API_App1_Ready(void)
 {
@@ -343,6 +344,7 @@ void API_App1_Ready(void)
    CoSetTTBase(TTBL1_CACHE);
    CoInvalidateMainTlb();
    setAppNum(NUM_APP1);
+   debugPrint(2);
 }
 
 void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
