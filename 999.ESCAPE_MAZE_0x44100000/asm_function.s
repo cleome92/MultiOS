@@ -129,7 +129,40 @@ SVC_Lcd_Select_Draw_Frame_Buffer:
 SVC_Lcd_Select_Display_Frame_Buffer:
 	SVC 13
 	BX 	LR
+	.global SVC_setTimerStart
+SVC_setTimerStart:
+	SVC 15
+	BX 	LR
 
+	.global SVC_setTimerEnd
+SVC_setTimerEnd:
+	SVC 16
+	BX 	LR
+
+	.global SVC_getTimerStart
+SVC_getTimerStart:
+	SVC 17
+	BX 	LR
+
+	.global SVC_getTimerEnd
+SVC_getTimerEnd:
+	SVC 18
+	BX 	LR
+
+	.global SVC_getTimerMin
+SVC_getTimerMin:
+	SVC 19
+	BX 	LR
+
+	.global SVC_getTimerSec
+SVC_getTimerSec:
+	SVC 20
+	BX 	LR
+
+	.global SVC_getTimerMSec
+SVC_getTimerMSec:
+	SVC 21
+	BX 	LR
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @ unsigned int PABT_Falut_Status(void)

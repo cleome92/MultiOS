@@ -23,7 +23,7 @@ SECTIONS
 		__RO_BASE__ = .;	
 		*(.rodata)
    		*(.rodata.*)			
-   		. = ALIGN(4096);
+   		. = ALIGN(4096); 
    		__RO_LIMIT__ = .;
 	} > REGION_RODATA
 

@@ -24,7 +24,8 @@ extern void SVC_Lcd_Brightness_Control(int level);
 extern void SVC_Key_Poll_Init(void);
 extern void SVC_Lcd_Select_Draw_Frame_Buffer(int win_id,int buf_num);
 extern void SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num);
-
+extern void SVC_setTimerStart(unsigned char op);
+extern void SVC_setTimerEnd(unsigned char op);
 
 #define BLACK	0x0000
 #define WHITE	0xffff
@@ -101,6 +102,8 @@ void game(int idx)
 			if(py == goalY && px == goalX)
 			{
 				SVC_Lcd_Draw_BMP(100,100,popup[0]);
+				SVC_setTimerStart(0);
+				SVC_setTimerEnd(1);
 				break;
 			}
 
@@ -185,7 +188,7 @@ void game(int idx)
 					//else Uart_Printf("Input is invalid.[%d]\n", dir);
 				}
 			}
-			SVC_Uart_Printf("y[%d], x[%d] %d\n", py / step_size, px / step_size, map_arr[py/step_size][px/step_size]);
+//			SVC_Uart_Printf("y[%d], x[%d] %d\n", py / step_size, px / step_size, map_arr[py/step_size][px/step_size]);
 
 		}
 }
@@ -228,7 +231,7 @@ void Main(void)
 		SVC_Lcd_Draw_BMP(0,0,img[0]); // img Ãâ·Â
 		Delay(2000);
 		while(SVC_Uart1_Get_Pressed() == 0) {}
-
+		SVC_setTimerStart(1);
 		var_init(25);
 		game(0);
 

@@ -20,13 +20,6 @@
 UINT32 pageInfo[MAX_PAGE_NUM][3];
 Page_Info page_entry_info[32]; // page占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙 占썼열 ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 占쏙옙占쏙옙 占쏙옙占쏙옙
 
-enum mmu
-{
-    isEmpty = 0,
-    VA,
-    PA,
-    HDD
-};
 
 int flag = 0;
 
@@ -363,6 +356,11 @@ void debugPrint(UINT8 x)
 void debugPrintNum(UINT32 x)
 {
 //    Uart_Printf("%.8X  =========\n", x);
+}
+
+void debugPrintNum1(UINT32 x)
+{
+    Uart_Printf("%.8X  =========\n", x);
 }
 
 void setAppNum(UINT8 num)

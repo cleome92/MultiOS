@@ -1,4 +1,6 @@
 #include "device_driver.h"
+#include "multiOS.h"
+//UINT8 hour = 0;
 
 void Timer0_Delay(int mtime)
 {

@@ -2,7 +2,7 @@
 #include "multiOS.h"
 
 extern WIN_INFO_ST ArrWinInfo[5];
-
+extern UINT32 pageEntry[MAX_PAGE_NUM][5];
 #define BLACK	0x0000
 #define WHITE	0xffff
 #define BLUE	0x001f
@@ -58,7 +58,11 @@ void Main(void)
 	GIC_Set_Priority_Mask(0,0xFF);
 	GIC_Distributor_Enable(1);
 	Key_ISR_Enable(ENABLE);
-
+	int i;
+	for (i = 0; i < MAX_PAGE_NUM; i++)
+	{
+		pageEntry[i][PA] = 0x44b00000 + 0x1000*i;
+	}
 
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
@@ -133,13 +137,13 @@ void Main(void)
 	{
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
 		gstRN[NUM_APP1].RN[SP] = STACK_BASE_APP1;
-		gstRN[NUM_APP0].RN[LR] = 0x30000000 + 4;
-		gstRN[NUM_APP1].RN[LR] = 0x30000000 + 4;
+		gstRN[NUM_APP0].RN[LR] = VARAM + 4;
+		gstRN[NUM_APP1].RN[LR] = VARAM + 4;
 
 
 		setAppNum(NUM_APP0);
 //		setAppNum(NUM_APP1);
-		Timer0_Int_Delay(ENABLE,5);
+		Timer0_Int_Delay(ENABLE, 10);
 		if(getAppNum() == NUM_APP0)
 		{
 			Uart_Printf("\nAPP0 RUN\n", NUM_APP0);

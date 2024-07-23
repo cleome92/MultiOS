@@ -78,6 +78,19 @@ typedef struct Page_Info{
     UINT32 App_num;
 }Page_Info;
 
+#define MAX_PAGE_NUM    (32)
+#define SET             (1)
+#define CLR             (0)
+
+enum pageEntryElement
+{
+	isEmpty = 0,
+	VA,
+	PA,
+	HDD,
+	APP_NUM,
+	Mode
+};
 extern struct T_Context gstRN[];
 extern struct T_Context * gpaunContextAddress[];
 extern UINT32 Get_User_SP(void);
@@ -99,4 +112,5 @@ void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st,
 extern void CleanNInvalid(UINT32 addr);
 void SetTransTable_MultiOS1(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaStart, unsigned int attr); // 吏꾩꽦 異붽�
 UINT32* VA_2_pTT2(UINT32 VA);
+void debugPrintNum1(UINT32 x);
 #endif

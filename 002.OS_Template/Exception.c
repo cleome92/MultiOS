@@ -1,6 +1,13 @@
 #include "device_driver.h"
 #include "multiOS.h"
 
+UINT8 gucMin = 0;
+UINT8 gucSec = 0;
+UINT32 gunMSec = 0;
+UINT8 gucTimerStart = 0;
+UINT8 gucTimerEnd = 0;
+
+
 void Undef_Handler(unsigned int addr, unsigned int mode)
 {
 	Uart_Printf("UND-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
@@ -25,6 +32,7 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 //	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
 
 	load_page(DABT_Falut_Address(), getAppNum(), 0);
+//	API_DemandPage(DABT_Falut_Address(), 0);
 //	if (r == 0x7)
 //	{
 //		load_page(DABT_Falut_Address(), getAppNum());
@@ -49,6 +57,7 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 //	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
 
 	load_page(PABT_Falut_Address(), getAppNum(), 1);
+//	API_DemandPage(PABT_Falut_Address(), 1);
 	//for(;;);
 
 //	if (r == 0x7)
@@ -271,6 +280,7 @@ void Key4_ISR(void)
 
 void Timer0_ISR(void)
 {
+//	static UINT8 sucCount = 0;
 	static int value = 0;
 
 	rTINT_CSTAT |= ((1<<5)|1);
@@ -279,6 +289,19 @@ void Timer0_ISR(void)
 
 	LED_Display(value);
 	value = (value + 1) % 4;
+
+	gunMSec += 10;
+//	debugPrintNum1(sucCount);
+	if (gunMSec >= 1000)
+	{
+		gucSec++;
+		if (gucSec>59)
+		{
+			gucMin++;
+			gucSec = 0;
+		}
+		gunMSec = 0;
+	}
 }
 
 // SVC System Call 援ы쁽
@@ -289,21 +312,21 @@ void _SVC_Uart_Printf(const char *fmt,...)
 
 int _SVC_Uart1_GetIntNum(void)
 {
-	Uart_Printf("\n[SVC Uart GetIntNum]");
+//	Uart_Printf("\n[SVC Uart GetIntNum]");
 	int res = Uart1_GetIntNum();
 	return res;
 }
 
 char _SVC_Uart1_Get_Char(void)
 {
-	Uart_Printf("\n[SVC Uart Get_Char]");
+//	Uart_Printf("\n[SVC Uart Get_Char]");
 	char res = Uart1_Get_Char();
 	return res;
 }
 
 void _SVC_Lcd_Clr_Screen(void)
 {
-	Uart_Printf("\n[SVC Lcd_Clr_Screen]");
+//	Uart_Printf("\n[SVC Lcd_Clr_Screen]");
 	Lcd_Clr_Screen();
 }
 
@@ -315,50 +338,50 @@ void _SVC_Lcd_Draw_BMP(int x, int y, const unsigned short int *fp)
 
 void _SVC_Key_Wait_Key_Released(void)
 {
-	Uart_Printf("\n[SVC Key_Wait_Key_Released]");
+//	Uart_Printf("\n[SVC Key_Wait_Key_Released]");
 	Key_Wait_Key_Released();
 }
 
 void _SVC_Key_Wait_Key_Pressed(void)
 {
-	Uart_Printf("\n[SVC Key_Wait_Key_Pressed]");
+//	Uart_Printf("\n[SVC Key_Wait_Key_Pressed]");
 	Key_Wait_Key_Pressed();
 }
 
 void _SVC_Lcd_Init(void)
 {
-	Uart_Printf("\n[SVC Lcd Init]");
+//	Uart_Printf("\n[SVC Lcd Init]");
 	Lcd_Init();
 }
 
 extern void Lcd_Win_Init_arr(int id,int en, WIN_INFO_ST win_arr[5]);
 void _SVC_Lcd_Win_Init(int id, int en, WIN_INFO_ST win_arr[5])
 {
-	Uart_Printf("\n[SVC Win Lcd Init]");
+//	Uart_Printf("\n[SVC Win Lcd Init]");
 	Lcd_Win_Init_arr(id, en, win_arr);
 }
 
 void _SVC_Lcd_Brightness_Control(int level)
 {
-	Uart_Printf("\n[SVC Lcd Brightness Control]");
+//	Uart_Printf("\n[SVC Lcd Brightness Control]");
 	Lcd_Brightness_Control(level);
 }
 
 void _SVC_Key_Poll_Init(void)
 {
-	Uart_Printf("\n[SVC Key Poll Init]");
+//	Uart_Printf("\n[SVC Key Poll Init]");
 	Key_Poll_Init();
 }
 
 void _SVC_Lcd_Select_Draw_Frame_Buffer(int win_id,int buf_num)
 {
-	Uart_Printf("\n[SVC Lcd Select Draw Frame Buffer]");
+//	Uart_Printf("\n[SVC Lcd Select Draw Frame Buffer]");
 	Lcd_Select_Draw_Frame_Buffer(win_id, buf_num);
 }
 
 void _SVC_Lcd_Select_Display_Frame_Buffer(int win_id,int buf_num)
 {
-	Uart_Printf("\n[SVC Lcd Select Display Frame Buffer]");
+//	Uart_Printf("\n[SVC Lcd Select Display Frame Buffer]");
 	Lcd_Select_Display_Frame_Buffer(win_id, buf_num);
 }
 
@@ -372,6 +395,41 @@ char _SVC_Uart1_Get_Pressed(void)
 	return Uart1_Get_Pressed();
 }
 
+void _SVC_setTimerStart(UINT8 op)
+{
+	gucTimerStart = op;
+}
+
+void _SVC_setTimerEnd(UINT8 op)
+{
+	gucTimerEnd = op;
+}
+
+
+UINT8 _SVC_getTimerStart(void)
+{
+	return gucTimerStart;
+}
+
+UINT8 _SVC_getTimerEnd(void)
+{
+	return gucTimerEnd;
+}
+
+UINT8 _SVC_getTimerMin(void)
+{
+	return gucMin;
+}
+
+UINT8 _SVC_getTimerSec(void)
+{
+	return gucSec;
+}
+UINT32 _SVC_getTimerMSec(void)
+{
+	return gunMSec;
+}
+
 void * SVC_Handler[] = {
 		(void *)_SVC_Uart_Printf,
 		(void *)_SVC_Uart1_GetIntNum,
@@ -383,9 +441,17 @@ void * SVC_Handler[] = {
 		(void *)_SVC_Lcd_Init,
 		(void *)_SVC_Lcd_Win_Init,
 		(void *)_SVC_Lcd_Brightness_Control,
-		(void *)_SVC_Key_Poll_Init,
+		(void *)_SVC_Key_Poll_Init,						// 10
 		(void *)_SVC_Uart1_Get_Pressed,
 		(void *)_SVC_Lcd_Select_Draw_Frame_Buffer,
 		(void *)_SVC_Lcd_Select_Display_Frame_Buffer,
 		(void *)_SVC_Uart1_Print_6_Paremeter,
+
+		(void *)_SVC_setTimerStart,			// 15
+		(void *)_SVC_setTimerEnd,
+		(void *)_SVC_getTimerStart,
+		(void *)_SVC_getTimerEnd,
+		(void *)_SVC_getTimerMin,
+		(void *)_SVC_getTimerSec,
+		(void *)_SVC_getTimerMSec,
 };
