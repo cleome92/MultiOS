@@ -65,7 +65,6 @@ struct T_Context
     UINT32 RN[18];
 };
 
-// 박도윤
 // page entry 관련
 typedef struct Page_Info{
     UINT32 PA;
@@ -90,7 +89,7 @@ void set_Page_Info(UINT32 PA, UINT32 VA, UINT32 App_num, UINT32 idx);
 void page_entry_init();
 UINT32 load_page(UINT32 VA, int app_num);
 UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num); // page entry에서 찾기
-
+void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd);
 extern void CleanNInvalid(UINT32 addr);
 //void (*API_Init[])(void);
 #endif

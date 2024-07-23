@@ -23,8 +23,10 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 	r += (s << 4);
 	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
 
+	load_page(DABT_Falut_Address(), getAppNum());
+
 #if 0
-	for(;;); /* �좎룞�쇿뜝�숈삕�좎룞���좎룞�쇿뜝�뱀슱���좎룞�쇿뜝�숈삕 �좎뙇�뚮쨪���좎룞�쇿뜝�숈삕�좎떦�몄삕�좎룞���좎뙓�ㅻ윭�좎룞���좎룞�쇿뜝�숈삕 */
+	for(;;); /* 占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫짗占쏙옙占쎌쥙猷욑옙�용쐻占쎈��깍옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 占쎌쥙�뉛옙��Ø占쏙옙占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫뼣占쎈챷�뺧옙醫롫짗占쏙옙占쎌쥙�볩옙�살쑎占쎌쥙猷욑옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 */
 #endif
 }
 
@@ -40,6 +42,8 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 	sd = Macro_Extract_Area(sd, 0x1, 12);
 	r += (s << 4);
 	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
+
+	load_page(PABT_Falut_Address(), getAppNum());
 	for(;;);
 }
 
@@ -267,7 +271,7 @@ void Timer0_ISR(void)
 	value = (value + 1) % 4;
 }
 
-// SVC System Call 구현
+// SVC System Call 援ы쁽
 void _SVC_Uart_Printf(const char *fmt,...)
 {
 	Uart1_Printf(fmt);
