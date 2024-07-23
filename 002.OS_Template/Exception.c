@@ -5,6 +5,7 @@ void Undef_Handler(unsigned int addr, unsigned int mode)
 {
 	Uart_Printf("UND-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
 	Uart_Printf("Undefined Code Value[0x%X]\n", *(unsigned int *)addr);
+	Uart_Printf("Current APP Num %d\n", getAppNum());
 	for(;;);
 }
 
@@ -14,6 +15,9 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 
 	Uart_Printf("DABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
 	Uart_Printf("DABT-Fault Address[0x%X]\n", DABT_Falut_Address());
+	Uart_Printf("Current APP Num %d\n", getAppNum());
+//	Uart_Printf(" Fetch A : VA = %0.8X  PA = %0.8X\n", addr, VA_2_PA(addr));
+//	Uart_Printf("Access A : VA = %0.8X  PA = %0.8X\n", DABT_Falut_Address(), VA_2_PA(DABT_Falut_Address()));
 	sd = DABT_Falut_Status();
 	r = Macro_Extract_Area(sd, 0xf, 0);
 	d = Macro_Extract_Area(sd, 0xf, 4);
@@ -24,7 +28,7 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
 
 #if 0
-	for(;;); /* �좎룞�쇿뜝�숈삕�좎룞���좎룞�쇿뜝�뱀슱���좎룞�쇿뜝�숈삕 �좎뙇�뚮쨪���좎룞�쇿뜝�숈삕�좎떦�몄삕�좎룞���좎뙓�ㅻ윭�좎룞���좎룞�쇿뜝�숈삕 */
+	for(;;); /* 占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫짗占쏙옙占쎌쥙猷욑옙�용쐻占쎈��깍옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 占쎌쥙�뉛옙��Ø占쏙옙占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫뼣占쎈챷�뺧옙醫롫짗占쏙옙占쎌쥙�볩옙�살쑎占쎌쥙猷욑옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 */
 #endif
 }
 
@@ -34,6 +38,9 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 
 	Uart_Printf("PABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
 	Uart_Printf("PABT-Fault Address[0x%X]\n", PABT_Falut_Address());
+	Uart_Printf("Current APP Num %d\n", getAppNum());
+//	Uart_Printf(" Fetch A : VA = %0.8X  PA = %0.8X\n", addr, VA_2_PA(addr));
+//	Uart_Printf("Access A : VA = %0.8X  PA = %0.8X\n", PABT_Falut_Address(), VA_2_PA(PABT_Falut_Address()));
 	sd = PABT_Falut_Status();
 	r = Macro_Extract_Area(sd, 0xf, 0);
 	s = Macro_Extract_Area(sd, 0x1, 10);
@@ -267,7 +274,7 @@ void Timer0_ISR(void)
 	value = (value + 1) % 4;
 }
 
-// SVC System Call 구현
+// SVC System Call 援ы쁽
 void _SVC_Uart_Printf(const char *fmt,...)
 {
 	Uart1_Printf(fmt);

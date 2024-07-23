@@ -2,7 +2,7 @@
 #define __MULTI_OS__
 
 #define MAX_APP_NUM (2)
-#define NUM_APP0    (0) // app number, getAppNum()ÀÇ ¹ÝÈ¯ °ª
+#define NUM_APP0    (0) // app number, getAppNum()ï¿½íš‰ ì¨”íš¦íšŠì§± ì§¸ì§§
 #define NUM_APP1    (1) // app number
 #define NUM_NONAPP  (0xFF)
 
@@ -29,15 +29,32 @@
 #define TTBL0_PAGE 	(TTBL0 + SECTION_SIZE)
 #define TTBL1 		(0x44008000)
 #define TTBL1_PAGE 	(TTBL1 + SECTION_SIZE)
-#define TTBL0_CACHE (TTBL0 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
-#define TTBL1_CACHE (TTBL1 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
 
-#define page_entry_base 0x44B00000 // page entry ½ÃÀÛ ÁÖ¼Ò ~ 0x44B1F000 (32°³)
-#define page_entry_num 32 // page entry °³¼ö
+#define TTBL0_WBWA (TTBL0 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
+#define TTBL0_NCNB (TTBL0 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
+#define TTBL1_WBWA (TTBL1 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
+#define TTBL1_NCNB (TTBL1 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
+
+#define TTBL0_CACHE	(TTBL0_WBWA)
+#define TTBL1_CACHE	(TTBL1_WBWA)
+
+#define page_entry_base 0x44B00000 // page entry ì©íš„ï¿½íš¤ íšíšœì©Œíš˜ ~ 0x44B1F000 (32ì§¸ì¨€)
+#define page_entry_num 32 // page entry ì§¸ì¨€ì©Œì² 
+
+#define TTBR0 0xFFFFC000  // TTBR0ì˜ ê°€ìƒ ì£¼ì†Œ
+#define L1_INDEX_MASK 		(0xFFF00000)
+#define L2_INDEX_MASK 		(0x000FF000)
+#define PAGE_OFFSET_MASK 	(0x00000FFF)
+#define L1_SHIFT (20)
+#define L2_SHIFT (12)
+
 
 typedef unsigned char UINT8;
 typedef unsigned int UINT32;
 
+#define MAX_PAGE_NUM    (32)
+#define SET             (1)
+#define CLR             (0)
 enum Resister
 {
     R0 = 0,
@@ -65,8 +82,8 @@ struct T_Context
     UINT32 RN[18];
 };
 
-// ¹ÚµµÀ±
-// page entry °ü·Ã
+// ì¨”íš£ì¨‰ì¨‰ï¿½ì§¹
+// page entry ì§¸ì²´ì¨Œíš„
 typedef struct Page_Info{
     UINT32 PA;
     UINT32 VA;
@@ -89,8 +106,10 @@ void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 
 void set_Page_Info(UINT32 PA, UINT32 VA, UINT32 App_num, UINT32 idx);
 void page_entry_init();
 UINT32 load_page(UINT32 VA, int app_num);
-UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num); // page entry¿¡¼­ Ã£±â
+UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num); // page entryì©”ì§•ì©Œì§¯ íš„ì§™ì§¹ì°½
 
 extern void CleanNInvalid(UINT32 addr);
+UINT32 VA_2_PrintPermission(UINT32 VA);
+void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd);
 //void (*API_Init[])(void);
 #endif

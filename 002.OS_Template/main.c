@@ -28,6 +28,7 @@ void App_Read(unsigned int sector, unsigned int size, unsigned int addr)
 
 void Main(void)
 {
+	UINT32 uPageVA, uPagePA;
 	CoInitMmuAndL1L2Cache();
 	Uart_Init(115200);
 	LED_Init();
@@ -62,26 +63,59 @@ void Main(void)
 	gpaunContextAddress[0] = &gstRN[NUM_APP0];
 	gpaunContextAddress[1] = &gstRN[NUM_APP1];
 
-	// TTLB0 �ㅼ젙
+#if 0
+	// TTLB0 占썬끉��
 	setAppNum(NUM_APP0);
-	//SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA | (1<<17));
-	//SetTransTable_MultiOS(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
-	SetTransTable_Page(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
-	SetTransTable_Page(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
+	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP0, RW_NCNB | (1<<17));
+	SetTransTable_MultiOS(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
 	CoInvalidateMainTlb();
+	// TTLB1 占썬끉��
+	setAppNum(NUM_APP1);
+	SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_NCNB | (1<<17));
+	SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
+	CoInvalidateMainTlb();
+#endif
+
+#if 1
+	setAppNum(NUM_APP0);
+	uPageVA = RAM_APP0;
+	uPagePA = RAM_APP0;
+
+	while (uPageVA != RAM_APP1)
+	{
+		SetTransTable_SinlgePage(uPageVA, uPagePA, RW_WBWA_PAGE1, CHCHE_PAGE2_ACCESS);
+		uPageVA += 0x1000;
+		uPagePA += 0x1000;
+	}
+
+	SetTransTable_MultiOS(STACK_LIMIT_APP0, STACK_BASE_APP0-1, STACK_LIMIT_APP0, RW_WBWA | (1<<17));
+
+//	CoInvalidateMainTlb();
+
 	// TTLB1 �ㅼ젙
 	setAppNum(NUM_APP1);
-	SetTransTable_Page(RAM_APP0, (RAM_APP0+SIZE_APP0-1), RAM_APP1, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
-	SetTransTable_Page(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
-	//SetTransTable_MultiOS(RAM_APP0, (RAM_APP0+SIZE_APP1-1), RAM_APP1, RW_WBWA | (1<<17));
-	//SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
-	CoInvalidateMainTlb();
+	uPageVA = RAM_APP0;
+	uPagePA = RAM_APP1;
+	while (uPageVA != RAM_APP1)
+	{
+		SetTransTable_SinlgePage(uPageVA, uPagePA, RW_WBWA_PAGE1, CHCHE_PAGE2_ACCESS);
+		uPageVA += 0x1000;
+		uPagePA += 0x1000;
+	}
+
+	SetTransTable_MultiOS(STACK_LIMIT_APP1, STACK_BASE_APP1-1, STACK_LIMIT_APP1, RW_WBWA | (1<<17));
+
+//	debugPrintNum(VA_2_PA(0x44109C8C));
+//	CoInvalidateMainTlb();
+
+
+#endif
 #if 0 // SD Loading
 	{
 		extern volatile unsigned int sd_insert_flag;
 		SDHC_Init();
 		SDHC_ISR_Enable(1);
-		if(!sd_insert_flag) Uart_Printf("SD 카드 삽입 요망!\n");
+		if(!sd_insert_flag) Uart_Printf("SD 移대뱶 �쎌엯 �붾쭩!\n");
 		while(!sd_insert_flag);
 		SDHC_Card_Init();
 
@@ -92,10 +126,10 @@ void Main(void)
 	}
 #endif
 
-	// 박도윤
+	// 諛뺣룄��
 	// page table entry init
-	page_entry_init();
-
+//	page_entry_init();
+	memset(&gstRN, 0, 2*sizeof(struct T_Context));
 	for(;;)
 	{
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
@@ -103,9 +137,10 @@ void Main(void)
 		gstRN[NUM_APP0].RN[LR] = RAM_APP0 + 4;
 		gstRN[NUM_APP1].RN[LR] = RAM_APP0 + 4;
 
+
 //		setAppNum(NUM_APP0);
 		setAppNum(NUM_APP1);
-		Timer0_Int_Delay(ENABLE,5);
+//		Timer0_Int_Delay(ENABLE,5);
 		if(getAppNum() == NUM_APP0)
 		{
 			Uart_Printf("\nAPP0 RUN\n", NUM_APP0);

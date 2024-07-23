@@ -1,58 +1,9 @@
 #include "multiOS.h"
 #include "device_driver.h"
 
-#define MAX_APP_NUM (2)
-#define NUM_APP0    (0)
-#define NUM_APP1    (1)
-#define NUM_NONAPP  (0xFF)
-
-#define 	RAM_APP0			0x44100000                      //
-#define 	RAM_APP1			(RAM_APP0+SIZE_APP0)            //
-#define 	SIZE_STACK0			(1*1024*1024)
-#define 	SIZE_STACK1			(1*1024*1024)
-#define 	STACK_LIMIT_APP0	(RAM_APP1+SIZE_APP1)
-#define 	STACK_LIMIT_APP1	(STACK_LIMIT_APP0+SIZE_STACK0)
-#define 	STACK_BASE_APP0		(STACK_LIMIT_APP0+SIZE_STACK0)
-#define 	STACK_BASE_APP1		(STACK_LIMIT_APP1+SIZE_STACK1)
-
-#define 	SIZE_APP0			(4*1024*1024)
-#define 	SIZE_APP1			(4*1024*1024)
-
-#define 	SECTOR_APP0			100
-#define 	SECTOR_APP1			5000
-
-#define SECTOR_SIZE 		512
-#define ALIGN_SECTOR(x)	 	((((x+(SECTOR_SIZE-1))&~(SECTOR_SIZE-1))/SECTOR_SIZE))
-
-#define SECTION_SIZE	(0x4000)
-#define TTBL0 		(0x44000000)
-#define TTBL0_PAGE 	(TTBL0 + SECTION_SIZE)
-#define TTBL1 		(0x44008000)
-#define TTBL1_PAGE 	(TTBL1 + SECTION_SIZE)
-#define TTBL0_CACHE (TTBL0 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
-#define TTBL1_CACHE (TTBL1 | (1<<6) | (1<<3) | (0<<1) | (0<<0))
-
-typedef unsigned char UINT8;
-typedef unsigned int UINT32;
-
-#define RW_WBWA_PAGE2_ACCESS	(1<<11 | 0x5<<6 | 0x3<< 4 | 1<<3 | 1<<1)
-#define RW_WBWA_PAGE2_NOACCESS	(1<<11 | 0x5<<6 | 0x3<< 4 | 1<<3 | 1<<1)
-/*
-1. APP Switiching Á×ÀÌ°í ÇÑ ¾Û¸¸ °è¼Ó ½ÇÇà½ÃÅ°¸é¼­ Page Å×½ºÆ®
-2. VA to PA ÇÔ¼ö ÀÛ¼º ÇÊ¿ä
-3. printf·Î Áß°£Áß°£ setTansTable ³»ºÎ for loop Âï¾îº¸¸é¼­ µğ¹ö±ë ÇØº¸±â
-    setPageAccess(VA, PA)
-    setPageNOAccess(VA, PA)
-    ÇØ´ç ÇÔ¼ö¸¦ ÅëÇØ Access ±ÇÇÑ ºÎ¿©
-    setPageReLocate(VA, PA)
-    getPAadress(VA)
-*/
-#define MAX_PAGE_NUM    (32)
-#define SET             (1)
-#define CLR             (0)
 
 UINT32 pageInfo[MAX_PAGE_NUM][3];
-Page_Info page_entry_info[32]; // page¿¡ °üÇÑ Á¤º¸ ´ãÀº ¹è¿­ ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 °ü·Ã Á¤º¸
+Page_Info page_entry_info[32]; // pageì— ê´€í•œ ì •ë³´ ë‹´ì€ ë°°ì—´ ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 ê´€ë ¨ ì •ë³´
 
 enum mmu
 {
@@ -62,154 +13,7 @@ enum mmu
     HDD
 };
 
-/*
-void smallPageLoading(UINT32* VA, UINT32* PA)
-{
-    memcpy(VA, PA, sizeof(UINT32)*1024);
-}
-*/
 
-/*
-void demandPage(void)
-{
-    UINT32 i = 0;
-    for (i = 0; i < MAX_PAGE_NUM; i++)
-    {
-        if (pageInfo[i][isEmpty] == CLR)
-        {
-            pageInfo[i][isEmpty] = SET;
-            pageInfo[i][VA] = FaultAddress;
-            pageInfo[i][PA] = VA2PA(VA);
-            pageInfo[i][HDD] = getHDD(pageInfo[i][PA]);
-            smallPageLoading(pageInfo[i][VA], pageInfo[i][PA]);
-            // setPageLocate(VA);
-            break;
-        }
-    }
-    if (i == MAX_PAGE_NUM)
-    {
-        setPageNOAccess(VA, PA); // RRÀ¸·Î VA ÀÓÀÇ ÁöÁ¤
-        savePage2RAM(VA, PA);
-        setPageReLocate(VA, PA);
-    }
-}
-*/
-
-
-// VA -> PA ¸ÅÄªÇÏ´Â ÇÔ¼ö
-/*
-void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
-{
-	UINT32 i,j;
-	UINT32* pTT1;
-    UINT32* pTT2;
-
-    UINT32 PA_1st_Idx; // »óÀ§ 12ºñÆ® PA ½ÃÀÛ
-    UINT32 VA_1st_Idx; // »óÀ§ 12ºñÆ® VA ½ÃÀÛ
-    UINT32 nNumOfSec; // section °³¼ö
-
-	PA_1st_Idx = (uPaStart & ~0xfffff) >> 20;
-	VA_1st_Idx = (uVaStart & ~0xfffff) >> 20;
-
-	nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
-
-	for(i=0; i<=nNumOfSec; i++)
-	{
-        if (getAppNum() == NUM_APP0)
-        {
-            pTT1 = (UINT32 *)TTBL0 + ((VA_1st_Idx + i) << 2);	// Set 1st Entry Info
-            pTT2 = (UINT32 *)(TTBL0_PAGE + i*0x400);	//
-        }
-        else // APP 1
-        {
-            pTT1 = (UINT32 *)TTBL1 + VA_1st_Idx + i;
-            pTT2 = (UINT32 *)(TTBL1_PAGE + i*0x400);
-        }
-
-		*pTT1 = (UINT32)pTT2 | attr_1st;   	 				// Set 1st Descriptor Info
-        CleanNInvalid((UINT32)pTT1);
-        for (j=0; j<256; j++)
-        {
-            pTT1 = (UINT32*)pTT2 + j;						// Set 2nd Entry Info
-            *pTT1 = (PA_1st_Idx<<20 | j<<12 | attr_2nd);	// Set 2nd Descriptor Info
-            CoInvalidateITlbVA(PA_1st_Idx<<20 | j<<12);
-        }
-	}
-}
-*/
-
-// VA -> PA ¸ÅÄªÇÏ´Â ÇÔ¼ö
-// attr_1st : 0 ~ 9¹ø bit
-// attr_2nd : 0 ~ 11¹ø bit
-// uPaStart : 1Â÷ Å×ÀÌºí ½ÃÀÛ À§Ä¡
-// uPaStart2 : 2Â÷ Å×ÀÌºí ½ÃÀÛ À§Ä¡ (ÀÌ°Ç ÆÄ¶ó¹ÌÅÍ ¹ŞÀ» ¶§ °è»êÇÒ°ÅÀÓ)
-// paging ¿µ¿ª : 0x44B0000 ~ 0x44B20000 4KB 32°³???
-/*
-#define page_table_size 32 // page table ÀüÃ¼ °³¼ö
-void SetTransTable_Page_parkdoyun(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd, UINT32 uPaStart2)
-{
-    // ÀÌ°Å Á¦°ÅÀÓ
-    // °ÇµéÁö ¸¶¼À ¤Ñ¤Ñ
-    // À§¿¡ ²¨ °íÄ¡¼À
-    // OK
-	UINT32 i,j;
-	UINT32* pTT1; // 1¹øÂ° TT Entry ÁÖ¼Ò (section)
-    UINT32* pTT2; // 2¹øÂ° TT Entry ÁÖ¼Ò (page)
-
-    UINT32 base_page_tbl = uPaStart & 0xFFFFFC00; // »óÀ§ 22ºñÆ®, page table base address
-
-
-    UINT32 PA_1st_Idx; // »óÀ§ 20ºñÆ®, PA ½ÃÀÛ
-    UINT32 VA_1st_Idx; // »óÀ§ 12ºñÆ®, VA ½ÃÀÛ
-    UINT32 VA_2nd_Idx; // 12 ~ 19 ºñÆ®
-    UINT32 nNumOfSec; // section °³¼ö
-
-	PA_1st_Idx = (uPaStart & 0xFFFFF000) >> 12;
-	VA_1st_Idx = (uVaStart & 0xFFF00000) >> 20;
-    VA_2nd_Idx = (uVaStart & 0x000FF000) >> 12;
-
-	nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
-
-    if (getAppNum() == NUM_APP0)
-    {
-        pTT1 = (UINT32 *)TTBL0 + (VA_1st_Idx << 2);	// Set 1st Entry Info
-        //pTT2 = (UINT32 *)(TTBL0_PAGE + i*0x400);	//
-    }
-    else // APP 1
-    {
-        pTT1 = (UINT32 *)TTBL1 + (VA_1st_Idx << 2);
-        //pTT2 = (UINT32 *)(TTBL1_PAGE + i*0x400);
-    }
-    pTT2 = (base_page_tbl+(i<<22)) | (VA_2nd_Idx << 2) | 0x01;
-
-    UINT32 page_entry_idx = 0;
-	for(i=0; i<=nNumOfSec; i++)
-	{
-        // Ã¹¹øÂ° T/T Entry ¼³Á¤
-        *pTT1++ = attr_1st | (base_page_tbl+(i<<22));
-
-        // ÀĞ¾î¿Â 2nd level descriptor
-        *pTT2++ =
-
-        //pTT2 = (PA_1st_Idx + (nNumOfSec - i)) << 20 | (uVaStart & 0x00000FFF);
-
-        // page entry´Â 0x44B00000 ºÎÅÍ 0x44B20000±îÁö 32°³°¡ °ü¸®µÈ´Ù
-        // ±×·¯¸é page entryÀÇ N¹øÂ°¿¡ ¹¹°¡ µé¾î°¥Áö ´Ù ÀúÀåÇØ¾ß ÇÔ???!?!?!?
-
-
-        page_entry_idx = (page_entry_idx + 1) % 32; // page entryÀÇ ¸î¹øÂ°¿¡ µé¾î°¥Áö, RR
-
-		*pTT1 = (UINT32)pTT2 | attr_1st;   	 				// Set 1st Descriptor Info
-        CleanNInvalid((UINT32)pTT1);
-        for (j=0; j<256; j++)
-        {
-            pTT1 = (UINT32*)pTT2 + j;						// Set 2nd Entry Info
-            *pTT1 = (PA_1st_Idx<<20 | j<<12 | attr_2nd);	// Set 2nd Descriptor Info
-            CoInvalidateITlbVA(PA_1st_Idx<<20 | j<<12);
-        }
-	}
-}
-*/
 
 #define PAGE_TABLE_SIZE 4096
 //#define SECTION_SIZE 0x100000
@@ -217,143 +21,41 @@ void SetTransTable_Page_parkdoyun(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStar
 #define NUM_L2_ENTRIES 256
 
 
-// ÆäÀÌÁö Å×ÀÌºíÀ» ÃÊ±âÈ­ÇÏ´Â ÇÔ¼ö
-/*
-void init_l2_page_table(UINT32* l2_page_table) {
-	UINT32 i;
-    for (i = 0; i < NUM_L2_ENTRIES; i++) {
-        l2_page_table[i] = 0;
-    }
-}
-
-// °¡»ó ÁÖ¼Ò¸¦ ½ÇÁ¦ ÁÖ¼Ò·Î ¸ÅÇÎÇÏ´Â 2Â÷ Å×ÀÌºí ¼³Á¤ ÇÔ¼ö
-void set_l2_page_table_entry(UINT32* l2_page_table, UINT32 virtual_address, UINT32 physical_address, UINT32 attributes) {
-    // 2Â÷ ÆäÀÌÁö Å×ÀÌºí ¿£Æ®¸® ÀÎµ¦½º °è»ê
-    UINT32 index = (virtual_address & (SECTION_SIZE - 1)) / PAGE_SIZE;
-    // ÆäÀÌÁö Å×ÀÌºí ¿£Æ®¸® ¼³Á¤
-    l2_page_table[index] = (physical_address & ~(PAGE_SIZE - 1)) | (attributes & 0xFFF);
-}
-
-typedef struct {
-    UINT32* l1_page_table;
-    UINT32* l2_page_tables;
-} T_page_table;
-*/
-
-
-#define TTBR0 0xFFFFC000  // TTBR0ÀÇ °¡»ó ÁÖ¼Ò
-#define L1_INDEX_MASK (0xFFF00000)
-#define L2_INDEX_MASK (0x000FF000)
-#define PAGE_OFFSET_MASK 	(0x00000FFF)
-#define L1_SHIFT (20)
-#define L2_SHIFT (12)
-
-// °¡»ó ÁÖ¼Ò¸¦ ½ÇÁ¦ ÁÖ¼Ò·Î º¯È¯ÇÏ´Â ÇÔ¼ö
-/*
-UINT32 virtual_to_physical(T_page_table* page_table, UINT32 virtual_address) {
-    // 1Â÷ ÆäÀÌÁö Å×ÀÌºí ¿£Æ®¸® ÀÎµ¦½º °è»ê
-    UINT32 l1_index = (virtual_address & L1_INDEX_MASK) >> L1_SHIFT;
-    UINT32 l1_entry = page_table->l1_page_table[l1_index];
-
-    // 2Â÷ ÆäÀÌÁö Å×ÀÌºí ¿£Æ®¸® ÀÎµ¦½º °è»ê
-    UINT32 l2_index = (virtual_address & L2_INDEX_MASK) >> L2_SHIFT;
-    UINT32* l2_page_table = (UINT32*)(l1_entry & ~0xFFF);
-    UINT32 l2_entry = l2_page_table[l2_index];
-
-    // ½ÇÁ¦ ÁÖ¼Ò °è»ê
-    UINT32 physical_address = (l2_entry & ~0xFFF) | (virtual_address & 0xFFF);
-
-    return physical_address;
-}
-*/
 
 void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
 {
-	UINT32 i,j;
 	UINT32* pTT1;
-    UINT32* pTT2;
+	UINT32* pTT2;
 
     UINT32 PA_1st_Idx = 0;
-    UINT32 VA_1st_Idx = 0;
 	UINT32 PA_2nd_Idx = 0;
+    UINT32 VA_1st_Idx = 0;
     UINT32 VA_2nd_Idx = 0;
-
-	UINT32 nNumOfSec = 0;
 
 	VA_1st_Idx = (uVaStart & L1_INDEX_MASK) >> L1_SHIFT;
 	PA_1st_Idx = (uPaStart & L1_INDEX_MASK) >> L1_SHIFT;
 	VA_2nd_Idx = (uVaStart & L2_INDEX_MASK) >> L2_SHIFT;
 	PA_2nd_Idx = (uPaStart & L2_INDEX_MASK) >> L2_SHIFT;
 
-
-	debugPrintNum(nNumOfSec);
-
 	if (getAppNum() == NUM_APP0)
 	{
-		pTT1 = (UINT32 *)(TTBL0 + VA_1st_Idx*sizeof(int)) ;			// Set 1st Entry Info
-		//pTT2 = (UINT32 *)TTBL0_PAGE;
-		*pTT1 = TTBL0_PAGE + VA_1st_Idx*PAGE_SIZE | attr_1st;								// Set 1st Descriptor Info
+		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));								// Set 1st Entry Info
+		*pTT1 = (TTBL0_PAGE + (VA_1st_Idx - 0x441) * 1024) | attr_1st;		// Set 1st Descriptor Info
 	}
 	else
 	{
-		pTT1 = (UINT32 *)(TTBL1 + VA_1st_Idx*sizeof(int)) ;			// Set 1st Entry Info
-		//pTT2 = (UINT32 *)TTBL1_PAGE;
-		*pTT1 = TTBL1_PAGE | attr_1st;								// Set 1st Descriptor Info
+		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2)) ;							// Set 1st Entry Info
+		*pTT1 = (TTBL1_PAGE + (VA_1st_Idx - 0x441) * 1024) | attr_1st;		// Set 1st Descriptor Info
 	}
-	CleanNInvalid((UINT32)pTT1);
 
-	for (j=0; j<256; j++)
-	{
-		pTT1 = (UINT32*)pTT2 + (j<<2);						// Set 2nd Entry Info
-		*pTT1 = (PA_1st_Idx<<20 | j<<12 | attr_2nd);	// Set 2nd Descriptor Info
-		CoInvalidateITlbVA(PA_1st_Idx<<20 | j<<12);
-	}
+	pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
+	pTT2 = (UINT32*)(pTT2 + VA_2nd_Idx);								// Set 2nd Entry Info
+	*pTT2 = ((PA_1st_Idx<<L1_SHIFT) | (PA_2nd_Idx<<L2_SHIFT) | attr_2nd);	// Set 2nd Descriptor Info
 
 }
 
 
-// VA 0x84100000 ~ 0x84900000 -1 => PA 0x44100000 ~ 0x44900000 -1
-/*
-UINT8 virtual_to_physical(UINT32 virtual_address)
-{
-	UINT8 appNum = getAppNum();// current app number
-	UINT8 save_addr = virtual_address - 0x40000000 - (appNum*SIZE_APP0); // VA APP0(0x441) APP1(0x445)
-	UINT32 l1_descriptor;
-
-	//UINT32 sizeOfPAGE = 1 << 12; // 4KB == 2^12
-	UINT32 va19_12;
-
-    // 1 Level Descriptor
-	if(appNum == NUM_APP0)
-	{
-		l1_descriptor = (unsigned int)(TTBL0_PAGE + ((save_addr>>20)<<2));
-	}
-	if(appNum == NUM_APP1)
-	{
-		l1_descriptor = (unsigned int)(TTBL1_PAGE + ((save_addr>>20)<<2));
-	}
-
-	va19_12 = (save_addr&0xff000)>>12;
-
-}
-*/
-
-// page ÀûÀçÇÏ´Â ÇÔ¼ö ÀÛ¼º
-// ¹ÚµµÀ±
-// page ÀûÀçÇÏ´Â ÄÚµå
-    /*
-    1. VA -> PA º¯È¯ (ÇÔ¼ö »ç¿ë)
-    2. ¸¸¾à 00ÀÌ¶ó¸é -> page entry¿¡ ÀûÀçÇØ¾ß ÇÔ (memcpy ÀÌ¿ë)
-        1) page´Â RR·Î ÀûÀç
-        2) srcÀÇ ÁÖ¼Ò ±â¾ïÇÏ´Â °ø°£ µû·Î ¸¸µé¾î¾ß ÇÔ -> 32°³´Ï±î 32°³ PA ¹è¿­ ¸¸µéÀÚ (UINT32)
-        3) ¸¸¾à ´Ù Ã¡´Ù¸é -> ¾î¶² °Å¸¦ »©°í ´Ù½Ã ³ÖÀ» °ÇÁö? (ÀÌ°Ç ³»°¡ ÇÏ´Â °Å X)
-        (+) ´ëÃ¼ÇÏ°í ºüÁø pageÀÇ ¼Ó¼º ´Ù½Ã 00À¸·Î ¹Ù²ã¾ß ÇÔ
-    3. 01ÀÌ¸é page entry¿¡¼­ Ã£¾Æ¼­ »ç¿ë
-        1) 32°³´Ï±î ±×³É ÀüÃ¼ ´Ù Ã£±â (loop)
-    */
-// src ÁÖ¼Ò ±â¾ï -> OS¿¡ Àü¿ªº¯¼ö·Î ¼±¾ğÇØ¼­ ÀúÀåÇÏ±â src ÁÖ¼Ò (PA, NA), ¸î¹ø appÀÎÁö
-
-UINT32 VA_2_PA(UINT32 VA) // VA ÀÎÀÚ·Î ¹Ş¾Æ¼­ PA ¸®ÅÏÇÏ´Â ÇÔ¼ö
+UINT32 VA_2_PA(UINT32 VA) // VA ì¸ìë¡œ ë°›ì•„ì„œ PA ë¦¬í„´í•˜ëŠ” í•¨ìˆ˜
 {
 	UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
@@ -382,10 +84,10 @@ UINT32 VA_2_PA(UINT32 VA) // VA ÀÎÀÚ·Î ¹Ş¾Æ¼­ PA ¸®ÅÏÇÏ´Â ÇÔ¼ö
 	return PA;
 }
 
-// ¿©±â¿¡ ¸¸µé¾î ÁÖ¼¼¿ä ÇÔ¼ö ÀÌ¸§¸¸ÀÌ¶óµµ plz 2nc descriptor ³»¿ë ¹Ù²Ü ¼ö ÀÖµµ·Ï
+// ì—¬ê¸°ì— ë§Œë“¤ì–´ ì£¼ì„¸ìš” í•¨ìˆ˜ ì´ë¦„ë§Œì´ë¼ë„ plz 2nc descriptor ë‚´ìš© ë°”ê¿€ ìˆ˜ ìˆë„ë¡
 
-void set_VA_Access(UINT32 VA, UINT32 option) // optionÀÌ 1ÀÌ¸é 10, 0ÀÌ¸é 00À¸·Î
-{	// optionÀ» set/clr·Î Àü´ŞÇÏ¿© ÇØ´ç VA¸¦ Á¢±ÙÀ» ºÎ¿©ÇÏ°Å³ª ÇØÁ¦ÇÑ´Ù.
+void set_VA_Access(UINT32 VA, UINT32 option) // optionì´ 1ì´ë©´ 10, 0ì´ë©´ 00ìœ¼ë¡œ
+{	// optionì„ set/clrë¡œ ì „ë‹¬í•˜ì—¬ í•´ë‹¹ VAë¥¼ ì ‘ê·¼ì„ ë¶€ì—¬í•˜ê±°ë‚˜ í•´ì œí•œë‹¤.
 	UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
@@ -422,8 +124,8 @@ void set_VA_Access(UINT32 VA, UINT32 option) // optionÀÌ 1ÀÌ¸é 10, 0ÀÌ¸é 00À¸·Î
 	}
 
 }
-UINT32 get_VA_Access(UINT32 VA) // ÀÌ°Å Á¢±Ù ±ÇÇÑ ÀÖÀ¸¸é 1 return
-{	//Á¢±Ù±ÇÇÑ »óÅÂ Ãâ·Â
+UINT32 get_VA_Access(UINT32 VA) // ì´ê±° ì ‘ê·¼ ê¶Œí•œ ìˆìœ¼ë©´ 1 return
+{	//ì ‘ê·¼ê¶Œí•œ ìƒíƒœ ì¶œë ¥
     UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
@@ -450,12 +152,12 @@ UINT32 get_VA_Access(UINT32 VA) // ÀÌ°Å Á¢±Ù ±ÇÇÑ ÀÖÀ¸¸é 1 return
 
     UINT32 tmp_mask = 0x3;
 
-    // 00 ÀÌ¸é 0 return
+    // 00 ì´ë©´ 0 return
     if((tmp_mask & *pTT2) == 0) return 0;
-    // 10 ÀÌ¸é 1 return
+    // 10 ì´ë©´ 1 return
     else if((tmp_mask & *pTT2) == 0x2) return 1;
 
-	return -1; // ÀÌ°Å¸é error
+	return -1; // ì´ê±°ë©´ error
 
 }
 
@@ -463,10 +165,10 @@ void set_Page_Info(UINT32 PA, UINT32 VA, UINT32 App_num, UINT32 idx) // page_ent
 {
     page_entry_info[idx].PA = PA;
     page_entry_info[idx].VA = VA;
-    page_entry_info[idx].App_num = App_num; // ¾ê°¡ 2¸é ºñ¾îÀÖ´Â °ÅÀÓ
+    page_entry_info[idx].App_num = App_num; // ì–˜ê°€ 2ë©´ ë¹„ì–´ìˆëŠ” ê±°ì„
 }
 
-void page_entry_init() // page entry Á¤º¸ °¡Áö°í ÀÖ´Â ¹è¿­ ÃÊ±âÈ­
+void page_entry_init() // page entry ì •ë³´ ê°€ì§€ê³  ìˆëŠ” ë°°ì—´ ì´ˆê¸°í™”
 {
     UINT32 i;
     for(i = 0; i <= page_entry_num; i++)
@@ -475,44 +177,44 @@ void page_entry_init() // page entry Á¤º¸ °¡Áö°í ÀÖ´Â ¹è¿­ ÃÊ±âÈ­
     }
 }
 
-UINT32 load_page(UINT32 VA, int app_num) // page ÀûÀç, ¼º°øÇÏ¸é 0 return
+UINT32 load_page(UINT32 VA, int app_num) // page ì ì¬, ì„±ê³µí•˜ë©´ 0 return
 {
     UINT32 i;
-    UINT32 full_idx = 0; // ¸¸¾à page entry ´Ù Ã¡´Ù¸é, 0¹øºÎÅÍ ¼ø¼­´ë·Î replacement ¼öÇà
+    UINT32 full_idx = 0; // ë§Œì•½ page entry ë‹¤ ì°¼ë‹¤ë©´, 0ë²ˆë¶€í„° ìˆœì„œëŒ€ë¡œ replacement ìˆ˜í–‰
     UINT32 page_entry_idx;
 
-    // ÀÏ´Ü PA¿¡¼­ 4, 5bit(AP[1:0]) 00ÀÎÁö 11ÀÎÁö È®ÀÎÇÏ±â
+    // ì¼ë‹¨ PAì—ì„œ 4, 5bit(AP[1:0]) 00ì¸ì§€ 11ì¸ì§€ í™•ì¸í•˜ê¸°
     UINT32 tmp_PA = VA_2_PA(VA);
 
     // UINT32 tmp_mask = 0x00 | (3 << 4);
 
     if(!get_VA_Access(VA)) // 2nd descriptor 00 -> page fault
     {
-        // ºóÄ­¿¡ ³Ö±â, 32°³ ÀüºÎ È®ÀÎ
+        // ë¹ˆì¹¸ì— ë„£ê¸°, 32ê°œ ì „ë¶€ í™•ì¸
         page_entry_idx = -1;
         for(i = 0; i < page_entry_num; i++)
         {
-            if(page_entry_info[i].App_num == 2) // ºñ¾úÀ¸¸é ¿©±â¿¡ ³ÖÀÚ (RR)
+            if(page_entry_info[i].App_num == 2) // ë¹„ì—ˆìœ¼ë©´ ì—¬ê¸°ì— ë„£ì (RR)
             {
                 page_entry_idx = i;
                 break;
           }
         }
 
-        // ºóÄ­ Á¸ÀçÇÑ´Ù¸é ÇØ´ç À§Ä¡(page_entry_idx)¿¡ ÀûÀç
+        // ë¹ˆì¹¸ ì¡´ì¬í•œë‹¤ë©´ í•´ë‹¹ ìœ„ì¹˜(page_entry_idx)ì— ì ì¬
 
-        // ¸¸¾à ´Ù Â÷ÀÖ´Ù¸é, ¾î¶² ¾Ö¸¦ ´ëÃ¼ÇÒ°ÇÁö? // ¸¸¾à page ent_entry_idx == -1
+        // ë§Œì•½ ë‹¤ ì°¨ìˆë‹¤ë©´, ì–´ë–¤ ì• ë¥¼ ëŒ€ì²´í• ê±´ì§€? // ë§Œì•½ page ent_entry_idx == -1
         if(page_entry_idx == -1)
         {
             page_entry_idx = full_idx;
-            set_VA_Access(page_entry_info[full_idx].VA, 0); // replaceµÇ´Â ÆäÀÌÁö Á¢±Ù±ÇÇÑ 0À¸·Î ¼öÁ¤
+            set_VA_Access(page_entry_info[full_idx].VA, 0); // replaceë˜ëŠ” í˜ì´ì§€ ì ‘ê·¼ê¶Œí•œ 0ìœ¼ë¡œ ìˆ˜ì •
             full_idx = (full_idx + 1) % 32;
         }
 
         UINT32 dest_addr = page_entry_base + page_entry_idx * PAGE_SIZE;
         UINT32 src_addr;
         if(app_num == 0) src_addr = tmp_PA;
-        else if(app_num == 1) src_addr = (tmp_PA - RAM_APP0) + RAM_APP1; // VA °¡ ¾Æ´Ï°í PA ÀÌ±â ¶§¹®¿¡ ±×³É tmp_PA¸¦ ÇÒ´çÇÏ´Â °Ô ¸Â´ÂÁö???
+        else if(app_num == 1) src_addr = (tmp_PA - RAM_APP0) + RAM_APP1; // VA ê°€ ì•„ë‹ˆê³  PA ì´ê¸° ë•Œë¬¸ì— ê·¸ëƒ¥ tmp_PAë¥¼ í• ë‹¹í•˜ëŠ” ê²Œ ë§ëŠ”ì§€???
         else return -1;
 
         // load page
@@ -523,20 +225,20 @@ UINT32 load_page(UINT32 VA, int app_num) // page ÀûÀç, ¼º°øÇÏ¸é 0 return
         page_entry_info[page_entry_idx].VA = VA;
         page_entry_info[page_entry_idx].App_num = app_num;
 
-        // Á¢±Ù±ÇÇÑ 1·Î ¹Ù²Ù±â
+        // ì ‘ê·¼ê¶Œí•œ 1ë¡œ ë°”ê¾¸ê¸°
         set_VA_Access(VA, 1);
 
-        // TLB Á¤¸®
+        // TLB ì •ë¦¬
         CoInvalidateMainTlb();
 
-        // ²¨³» ¾²±â (write back) -> ÀÌ°Ç ÇÚµé·¯ Á¤¸®µÇ°í OS°¡ ´Ù½Ã Á¢±ÙÇÒ °ÍÀÓ -> ±× ‹š ÀÚµ¿À¸·Î Á¢±ÙµÊ
+        // êº¼ë‚´ ì“°ê¸° (write back) -> ì´ê±´ í•¸ë“¤ëŸ¬ ì •ë¦¬ë˜ê³  OSê°€ ë‹¤ì‹œ ì ‘ê·¼í•  ê²ƒì„ -> ê·¸ ë–„ ìë™ìœ¼ë¡œ ì ‘ê·¼ë¨
 
     }
-    else if(get_VA_Access(VA)) // 11 -> ÀÌ¹Ì ÀÖÀ½, ²¨³» ¾²±â (write back ¾î¶»°Ô?) -> ½ÇÁ¦·Î´Â ÀÌ ºÎºĞ ½ÇÇàµÉ ¼ö ¾øÀ½, ¿¹¿Ü Ã³¸®
+    else if(get_VA_Access(VA)) // 11 -> ì´ë¯¸ ìˆìŒ, êº¼ë‚´ ì“°ê¸° (write back ì–´ë–»ê²Œ?) -> ì‹¤ì œë¡œëŠ” ì´ ë¶€ë¶„ ì‹¤í–‰ë  ìˆ˜ ì—†ìŒ, ì˜ˆì™¸ ì²˜ë¦¬
     {
-        // ¾îµğ¿¡ ÀÖ´ÂÁö Ã£±â
-        page_entry_idx = find_page_entry(VA, tmp_PA, app_num); // page_entry_info ¹è¿­ÀÇ ¸î¹øÂ° ÀÎµ¦½º¿¡ Á¤º¸ ´ã°ÜÀÖ´ÂÁö?
-        if(page_entry_idx == -1) return -1; // page entry¿¡ ¾øÀ½, ¿À·ù
+        // ì–´ë””ì— ìˆëŠ”ì§€ ì°¾ê¸°
+        page_entry_idx = find_page_entry(VA, tmp_PA, app_num); // page_entry_info ë°°ì—´ì˜ ëª‡ë²ˆì§¸ ì¸ë±ìŠ¤ì— ì •ë³´ ë‹´ê²¨ìˆëŠ”ì§€?
+        if(page_entry_idx == -1) return -1; // page entryì— ì—†ìŒ, ì˜¤ë¥˜
 
         //CoInvalidateMainTlb();
     }
@@ -546,7 +248,7 @@ UINT32 load_page(UINT32 VA, int app_num) // page ÀûÀç, ¼º°øÇÏ¸é 0 return
 }
 
 
-UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num) // page entry¿¡¼­ Ã£±â
+UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num) // page entryì—ì„œ ì°¾ê¸°
 {
     UINT32 i;
     for(i = 0; i < page_entry_num; i++)
@@ -632,12 +334,14 @@ void API_App0_Ready(void)
 {
    CoSetASID(1);
    CoSetTTBase(TTBL0_CACHE);
+   CoInvalidateMainTlb();
    setAppNum(NUM_APP0);
 }
 void API_App1_Ready(void)
 {
    CoSetASID(2);
    CoSetTTBase(TTBL1_CACHE);
+   CoInvalidateMainTlb();
    setAppNum(NUM_APP1);
 }
 
@@ -682,5 +386,31 @@ void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 
             CoInvalidateITlbVA(PA_1st_Idx<<20 | j<<12);
         }
    }
+}
+UINT32 VA_2_PrintPermission(UINT32 VA) // VA ï¿½ï¿½ï¿½Ú·ï¿½ ï¿½Ş¾Æ¼ï¿½ PA ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½
+{
+	UINT32 PA = 0;	// Return Value
+	UINT32* pTT1;
+	UINT32* pTT2;
+
+	UINT32 VA_1st_Idx = 0;
+	UINT32 VA_2nd_Idx = 0;
+
+	VA_1st_Idx = (VA & L1_INDEX_MASK) >> L1_SHIFT;
+	VA_2nd_Idx = (VA & L2_INDEX_MASK) >> L2_SHIFT;
+
+	if (getAppNum() == NUM_APP0)
+	{
+		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));
+	}
+	else
+	{
+		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2));
+	}
+
+	pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
+	pTT2 = (UINT32*)(((UINT32)pTT2) | (VA_2nd_Idx<<2));
+	PA = (*pTT2);
+	return PA;
 }
 
