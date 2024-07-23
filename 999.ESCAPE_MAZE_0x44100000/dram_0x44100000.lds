@@ -1,6 +1,6 @@
 MEMORY
 {
-	RAM  (rwx) : ORIGIN = 0x44100000, LENGTH = 56M
+	RAM  (rwx) : ORIGIN = 0x30000000, LENGTH = 56M
 }
 
 REGION_ALIAS("REGION_TEXT", RAM);
@@ -13,6 +13,7 @@ SECTIONS
 	.text :
 	{
 		crt0.o(.text)
+		. = ALIGN(4096);
 		*(.text)
     		. = ALIGN(4); 
 	} > REGION_TEXT
@@ -22,7 +23,7 @@ SECTIONS
 		__RO_BASE__ = .;	
 		*(.rodata)
    		*(.rodata.*)			
-   		. = ALIGN(4); 
+   		. = ALIGN(4096);
    		__RO_LIMIT__ = .;
 	} > REGION_RODATA
 

@@ -27,5 +27,5 @@ SVC_Uart1_GetIntNum:
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.global SVC_Uart1_Print_6_Paremeter
 SVC_Uart1_Print_6_Paremeter:
-	SVC 13
+	SVC 14
 	BX 	LR
