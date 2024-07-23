@@ -2,10 +2,11 @@
 #define __MULTI_OS__
 
 #define MAX_APP_NUM (2)
-#define NUM_APP0    (0) // app number, getAppNum()�횉 쨔횦횊짱 째짧
+#define NUM_APP0    (0) // app number, getAppNum()占쏙옙 占쏙옙환 占쏙옙
 #define NUM_APP1    (1) // app number
 #define NUM_NONAPP  (0xFF)
 
+#define		VARAM				(0x30000000)
 #define 	RAM_APP0			0x44100000                      //
 #define 	RAM_APP1			(RAM_APP0+SIZE_APP0)            //
 #define 	SIZE_STACK0			(1*1024*1024)
@@ -37,24 +38,12 @@
 
 #define TTBL0_CACHE	(TTBL0_WBWA)
 #define TTBL1_CACHE	(TTBL1_WBWA)
-
-#define page_entry_base 0x44B00000 // page entry 쩍횄�횤 횁횜쩌횘 ~ 0x44B1F000 (32째쨀)
-#define page_entry_num 32 // page entry 째쨀쩌철
-
-#define TTBR0 0xFFFFC000  // TTBR0의 가상 주소
-#define L1_INDEX_MASK 		(0xFFF00000)
-#define L2_INDEX_MASK 		(0x000FF000)
-#define PAGE_OFFSET_MASK 	(0x00000FFF)
-#define L1_SHIFT (20)
-#define L2_SHIFT (12)
-
+#define page_entry_base 0x44B00000 // page entry 占쏙옙占쏙옙 占쌍쇽옙 ~ 0x44B1F000 (32占쏙옙)
+#define page_entry_num 32 // page entry 占쏙옙占쏙옙
 
 typedef unsigned char UINT8;
 typedef unsigned int UINT32;
 
-#define MAX_PAGE_NUM    (32)
-#define SET             (1)
-#define CLR             (0)
 enum Resister
 {
     R0 = 0,
@@ -82,8 +71,7 @@ struct T_Context
     UINT32 RN[18];
 };
 
-// 쨔횣쨉쨉�짹
-// page entry 째체쨌횄
+// page entry 占쏙옙占쏙옙
 typedef struct Page_Info{
     UINT32 PA;
     UINT32 VA;
@@ -105,11 +93,10 @@ void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 
 
 void set_Page_Info(UINT32 PA, UINT32 VA, UINT32 App_num, UINT32 idx);
 void page_entry_init();
-UINT32 load_page(UINT32 VA, int app_num);
-UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num); // page entry쩔징쩌짯 횄짙짹창
-
-extern void CleanNInvalid(UINT32 addr);
-UINT32 VA_2_PrintPermission(UINT32 VA);
+UINT32 load_page(UINT32 VA, int app_num, int mode);
+UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num); // page entry占쏙옙占쏙옙 찾占쏙옙
 void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd);
-//void (*API_Init[])(void);
+extern void CleanNInvalid(UINT32 addr);
+void SetTransTable_MultiOS1(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaStart, unsigned int attr); // 吏꾩꽦 異붽�
+UINT32* VA_2_pTT2(UINT32 VA);
 #endif

@@ -131,10 +131,10 @@ HandlerIRQ:
 
     cmp r3, #0
 
-	ldreq	r0, =0x1f	@Ã³À½ APP ½ºÀ§Äª½Ã
+	ldreq	r0, =0x1f	@ì²˜ìŒ APP ìŠ¤ìœ„ì¹­ì‹œ
 	msreq 	spsr, r0
 
-    msrne spsr, r3		@±âÁ¸ ±âµ¿ÁßÀÎ APP ÀÖÀ» °æ¿ì
+    msrne spsr, r3		@ê¸°ì¡´ ê¸°ë™ì¤‘ì¸ APP ìˆì„ ê²½ìš°
 	ldr	lr, [r2, #68]
 
 	push {r4-r7}
@@ -208,26 +208,32 @@ HandlerUndef:
 
 
 HandlerDabort:
+	stmfd	sp!, {r0-r3, r12, lr} @ è«›ê¹†ë¾½
 	sub 	r0, lr, #8
 	mrs		r1, spsr
 	and		r1, r1, #0x1f
 	bl		Dabort_Handler
+	ldmfd	sp!,{r0 -r3, r12, lr} @ è¹‚ë“­ì
+	subs	pc, lr, #8
 
 HandlerPabort:
+	stmfd	sp!, {r0-r3, r12, lr} @ è«›ê¹†ë¾½
 	sub 	r0, lr, #4
 	mrs		r1, spsr
 	and		r1, r1, #0x1f
 	bl		Pabort_Handler
+	ldmfd	sp!,{r0-r3, r12, lr} @ è¹‚ë“­ì
+	subs	pc, lr, #4
 
 	.extern SVC_Handler
 HandlerSVC:
 	stmfd sp!, {r4-r6, lr}
-	ldr r4, [lr, #-4] @ svc ¸í·É ÀĞ¾î³»±â
-	bic r4, r4, #0xff000000 @svc ¸í·É¿¡¼­ ¼ıÀÚºÎºĞ¸¸ ³²±â±â (SVC_Handler ¹è¿­ÀÇ ¿ä¼Ò¹øÈ£)
+	ldr r4, [lr, #-4] @ svc ëª…ë ¹ ì½ì–´ë‚´ê¸°
+	bic r4, r4, #0xff000000 @svc ëª…ë ¹ì—ì„œ ìˆ«ìë¶€ë¶„ë§Œ ë‚¨ê¸°ê¸° (SVC_Handler ë°°ì—´ì˜ ìš”ì†Œë²ˆí˜¸)
 	ldr r12, =SVC_Handler
-	ldr lr, [r12, r4, lsl #2] @ r12(SVC_Handler) + r4(¿ä¼Ò¹øÈ£) * 4 = ÇÔ¼öÀÇ ÁÖ¼Ò
+	ldr lr, [r12, r4, lsl #2] @ r12(SVC_Handler) + r4(ìš”ì†Œë²ˆí˜¸) * 4 = í•¨ìˆ˜ì˜ ì£¼ì†Œ
 
-    @sys ¸ğµå·Î ÀüÈ¯ (sp, lrÀÌ sys°ÍÀÓ¿¡ ÁÖÀÇÇØ¾ß ÇÔ)
+    @sys ëª¨ë“œë¡œ ì „í™˜ (sp, lrì´ sysê²ƒì„ì— ì£¼ì˜í•´ì•¼ í•¨)
 	mov r5, sp   @ SVC SP Back up
 
 	mrs      r4, cpsr
@@ -236,7 +242,7 @@ HandlerSVC:
 
 	msr      cpsr_cxsf, r4
 	mov sp, r6   @ SVC SP = SYS SP
-	blx lr       @ ¹øÈ£¿¡ ¸Â´Â ÇØ´ç ÇÔ¼ö È£Ãâ(r0~r3Àº ±×´ë·Î Àü´ŞÇØ¾ß ÇÔ)
+	blx lr       @ ë²ˆí˜¸ì— ë§ëŠ” í•´ë‹¹ í•¨ìˆ˜ í˜¸ì¶œ(r0~r3ì€ ê·¸ëŒ€ë¡œ ì „ë‹¬í•´ì•¼ í•¨)
 
 	mov sp, r5
 

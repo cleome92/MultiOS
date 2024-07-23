@@ -5,19 +5,16 @@ void Undef_Handler(unsigned int addr, unsigned int mode)
 {
 	Uart_Printf("UND-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
 	Uart_Printf("Undefined Code Value[0x%X]\n", *(unsigned int *)addr);
-	Uart_Printf("Current APP Num %d\n", getAppNum());
 	for(;;);
+
 }
 
 void Dabort_Handler(unsigned int addr, unsigned int mode)
 {
 	unsigned int r, d, s, w, sd;
 
-	Uart_Printf("DABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
-	Uart_Printf("DABT-Fault Address[0x%X]\n", DABT_Falut_Address());
-	Uart_Printf("Current APP Num %d\n", getAppNum());
-//	Uart_Printf(" Fetch A : VA = %0.8X  PA = %0.8X\n", addr, VA_2_PA(addr));
-//	Uart_Printf("Access A : VA = %0.8X  PA = %0.8X\n", DABT_Falut_Address(), VA_2_PA(DABT_Falut_Address()));
+//	Uart_Printf("DABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
+//	Uart_Printf("DABT-Fault Address[0x%X]\n", DABT_Falut_Address());
 	sd = DABT_Falut_Status();
 	r = Macro_Extract_Area(sd, 0xf, 0);
 	d = Macro_Extract_Area(sd, 0xf, 4);
@@ -25,7 +22,13 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 	w = Macro_Extract_Area(sd, 0x1, 11);
 	sd = Macro_Extract_Area(sd, 0x1, 12);
 	r += (s << 4);
-	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
+//	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
+
+	load_page(DABT_Falut_Address(), getAppNum(), 0);
+//	if (r == 0x7)
+//	{
+//		load_page(DABT_Falut_Address(), getAppNum());
+//	}
 
 #if 0
 	for(;;); /* 占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫짗占쏙옙占쎌쥙猷욑옙�용쐻占쎈��깍옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 占쎌쥙�뉛옙��Ø占쏙옙占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫뼣占쎈챷�뺧옙醫롫짗占쏙옙占쎌쥙�볩옙�살쑎占쎌쥙猷욑옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 */
@@ -36,18 +39,22 @@ void Pabort_Handler(unsigned int addr, unsigned int mode)
 {
 	unsigned int r, s, sd;
 
-	Uart_Printf("PABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
-	Uart_Printf("PABT-Fault Address[0x%X]\n", PABT_Falut_Address());
-	Uart_Printf("Current APP Num %d\n", getAppNum());
-//	Uart_Printf(" Fetch A : VA = %0.8X  PA = %0.8X\n", addr, VA_2_PA(addr));
-//	Uart_Printf("Access A : VA = %0.8X  PA = %0.8X\n", PABT_Falut_Address(), VA_2_PA(PABT_Falut_Address()));
+//	Uart_Printf("PABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
+//	Uart_Printf("PABT-Fault Address[0x%X]\n", PABT_Falut_Address());
 	sd = PABT_Falut_Status();
 	r = Macro_Extract_Area(sd, 0xf, 0);
 	s = Macro_Extract_Area(sd, 0x1, 10);
 	sd = Macro_Extract_Area(sd, 0x1, 12);
 	r += (s << 4);
-	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
-	for(;;);
+//	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
+
+	load_page(PABT_Falut_Address(), getAppNum(), 1);
+	//for(;;);
+
+//	if (r == 0x7)
+//	{
+//		load_page(DABT_Falut_Address(), getAppNum());
+//	}
 }
 
 #if 1

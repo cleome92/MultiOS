@@ -105,14 +105,8 @@ extern void exynos_smc(unsigned int reg, int val1, int val2, int val3);
 #define RW_NCNB			(SS|USER_RW|DOMAIN0|NCNB|DT_SECTION)
 #define RW_NO_ACCESS	(SS|USER_RW|DOMAIN1|NCNB|DT_SECTION)
 #define RW_WBWA_PAGE1	(DOMAIN0 | DT_PAGE)
-#define RW_WBWA_PAGE2_ACCESS	(0x1<<11 | 0x5<<6 | 0x3<< 4 | 0x1<<3 | 0x1<<1)
-#define RW_WBWA_PAGE2_NOACCESS	(0x1<<11 | 0x5<<6 | 0x3<< 4 | 0x1<<3 | 0x0<<1)
-
-#define RW_NCNB_PAGE2_ACCESS	(0x1<<11 | 0x4<<6 | 0x3<< 4 | 0x0<<3 | 0x1<<1)
-#define RW_NCNB_PAGE2_NOACCESS	(0x1<<11 | 0x4<<6 | 0x3<< 4 | 0x0<<3 | 0x0<<1)
-
-#define CHCHE_PAGE2_ACCESS		(RW_WBWA_PAGE2_ACCESS)
-#define CHCHE_PAGE2_NOACCESS	(RW_NCNB_PAGE2_NOACCESS)
+#define RW_WBWA_PAGE2_ACCESS	(1<<11 | 0x5<<6 | 0x3<< 4 | 1<<3 | 1<<1)
+#define RW_WBWA_PAGE2_NOACCESS	(1<<11 | 0x5<<6 | 0x3<< 4 | 1<<3 | 0<<1)
 // cp15a.s & cp15.c
 
 void CoEnableL2PrefetchHint(void);

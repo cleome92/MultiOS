@@ -1,9 +1,24 @@
 #include "multiOS.h"
 #include "device_driver.h"
 
+//#define RW_WBWA_PAGE2_ACCESS	(1<<11 | 0x5<<6 | 0x3<< 4 | 1<<3 | 1<<1)
+//#define RW_WBWA_PAGE2_NOACCESS	(1<<11 | 0x5<<6 | 0x3<< 4 | 1<<3 | 1<<1)
+/*
+1. APP Switiching 占쏙옙占싱곤옙 占쏙옙 占쌜몌옙 占쏙옙占�占쏙옙占쏙옙占신곤옙庸�Page 占쌓쏙옙트
+2. VA to PA 占쌉쇽옙 占쌜쇽옙 占십울옙
+3. printf占쏙옙 占쌩곤옙占쌩곤옙 setTansTable 占쏙옙占쏙옙 for loop 占쏙옙咀몌옙庸�占쏙옙占쏙옙占�占쌔븝옙占쏙옙
+    setPageAccess(VA, PA)
+    setPageNOAccess(VA, PA)
+    占쌔댐옙 占쌉쇽옙占쏙옙 占쏙옙占쏙옙 Access 占쏙옙占쏙옙 占싸울옙
+    setPageReLocate(VA, PA)
+    getPAadress(VA)
+*/
+#define MAX_PAGE_NUM    (32)
+#define SET             (1)
+#define CLR             (0)
 
 UINT32 pageInfo[MAX_PAGE_NUM][3];
-Page_Info page_entry_info[32]; // page에 관한 정보 담은 배열 ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 관련 정보
+Page_Info page_entry_info[32]; // page占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙 占썼열 ex) page_entry_info[0] : 0x44B00000 ~ 0x44B01000 占쏙옙占쏙옙 占쏙옙占쏙옙
 
 enum mmu
 {
@@ -13,6 +28,14 @@ enum mmu
     HDD
 };
 
+int flag = 0;
+
+// VA -> PA 占쏙옙칭占싹댐옙 占쌉쇽옙
+// attr_1st : 0 ~ 9占쏙옙 bit
+// attr_2nd : 0 ~ 11占쏙옙 bit
+// uPaStart : 1占쏙옙 占쏙옙占싱븝옙 占쏙옙占쏙옙 占쏙옙치
+// uPaStart2 : 2占쏙옙 占쏙옙占싱븝옙 占쏙옙占쏙옙 占쏙옙치 (占싱곤옙 占식띰옙占쏙옙占�占쏙옙占쏙옙 占쏙옙 占쏙옙占쏙옙柰占쏙옙占�
+// paging 占쏙옙占쏙옙 : 0x44B0000 ~ 0x44B20000 4KB 32占쏙옙???
 
 
 #define PAGE_TABLE_SIZE 4096
@@ -21,41 +44,28 @@ enum mmu
 #define NUM_L2_ENTRIES 256
 
 
-
-void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
-{
-	UINT32* pTT1;
-	UINT32* pTT2;
-
-    UINT32 PA_1st_Idx = 0;
-	UINT32 PA_2nd_Idx = 0;
-    UINT32 VA_1st_Idx = 0;
-    UINT32 VA_2nd_Idx = 0;
-
-	VA_1st_Idx = (uVaStart & L1_INDEX_MASK) >> L1_SHIFT;
-	PA_1st_Idx = (uPaStart & L1_INDEX_MASK) >> L1_SHIFT;
-	VA_2nd_Idx = (uVaStart & L2_INDEX_MASK) >> L2_SHIFT;
-	PA_2nd_Idx = (uPaStart & L2_INDEX_MASK) >> L2_SHIFT;
-
-	if (getAppNum() == NUM_APP0)
-	{
-		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));								// Set 1st Entry Info
-		*pTT1 = (TTBL0_PAGE + (VA_1st_Idx - 0x441) * 1024) | attr_1st;		// Set 1st Descriptor Info
-	}
-	else
-	{
-		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2)) ;							// Set 1st Entry Info
-		*pTT1 = (TTBL1_PAGE + (VA_1st_Idx - 0x441) * 1024) | attr_1st;		// Set 1st Descriptor Info
-	}
-
-	pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
-	pTT2 = (UINT32*)(pTT2 + VA_2nd_Idx);								// Set 2nd Entry Info
-	*pTT2 = ((PA_1st_Idx<<L1_SHIFT) | (PA_2nd_Idx<<L2_SHIFT) | attr_2nd);	// Set 2nd Descriptor Info
-
-}
+#define TTBR0 0xFFFFC000  // TTBR0占쏙옙 占쏙옙占쏙옙 占쌍쇽옙
+#define L1_INDEX_MASK (0xFFF00000)
+#define L2_INDEX_MASK (0x000FF000)
+#define PAGE_OFFSET_MASK 	(0x00000FFF)
+#define L1_SHIFT (20)
+#define L2_SHIFT (12)
 
 
-UINT32 VA_2_PA(UINT32 VA) // VA 인자로 받아서 PA 리턴하는 함수
+// page 占쏙옙占쏙옙占싹댐옙 占쌉쇽옙
+    /*
+    1. VA -> PA 占쏙옙환 (占쌉쇽옙 占쏙옙占�
+    2. 占쏙옙占쏙옙 00占싱띰옙占�-> page entry占쏙옙 占쏙옙占쏙옙占쌔억옙 占쏙옙 (memcpy 占싱울옙)
+        1) page占쏙옙 RR占쏙옙 占쏙옙占쏙옙
+        2) src占쏙옙 占쌍쇽옙 占쏙옙占쏙옙求占�占쏙옙占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙 -> 32占쏙옙占싹깍옙 32占쏙옙 PA 占썼열 占쏙옙占쏙옙占쏙옙 (UINT32)
+        3) 占쏙옙占쏙옙 占쏙옙 찼占쌕몌옙 -> 占쏘떤 占신몌옙 占쏙옙占쏙옙 占쌕쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙? (占싱곤옙 占쏙옙占쏙옙 占싹댐옙 占쏙옙 X)
+        (+) 占쏙옙체占싹곤옙 占쏙옙占쏙옙 page占쏙옙 占쌈쇽옙 占쌕쏙옙 00占쏙옙占쏙옙 占쌕뀐옙占�占쏙옙
+    3. 01占싱몌옙 page entry占쏙옙占쏙옙 찾占싣쇽옙 占쏙옙占�
+        1) 32占쏙옙占싹깍옙 占쌓놂옙 占쏙옙체 占쏙옙 찾占쏙옙 (loop)
+    */
+// src 占쌍쇽옙 占쏙옙占�-> OS占쏙옙 占쏙옙占쏙옙占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙占쌔쇽옙 占쏙옙占쏙옙占싹깍옙 src 占쌍쇽옙 (PA, NA), 占쏙옙占�app占쏙옙占쏙옙
+
+UINT32 VA_2_PA(UINT32 VA) // VA 占쏙옙占쌘뤄옙 占쌨아쇽옙 PA 占쏙옙占쏙옙占싹댐옙 占쌉쇽옙
 {
 	UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
@@ -81,13 +91,42 @@ UINT32 VA_2_PA(UINT32 VA) // VA 인자로 받아서 PA 리턴하는 함수
 	pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
 	pTT2 = (UINT32*)(((UINT32)pTT2) | (VA_2nd_Idx<<2));
 	PA = (*pTT2 & ~PAGE_OFFSET_MASK) | VA_Page_Idx;
+	Uart_Printf("[VA_2_PA] VA[%0.8X], PA[%0.8X]\n", VA, PA);
 	return PA;
 }
+UINT32* VA_2_pTT2(UINT32 VA) // VA 占쏙옙占쌘뤄옙 占쌨아쇽옙 PA 占쏙옙占쏙옙占싹댐옙 占쌉쇽옙
+{
+	UINT32 PA = 0;	// Return Value
+	UINT32* pTT1;
+	UINT32* pTT2;
 
-// 여기에 만들어 주세요 함수 이름만이라도 plz 2nc descriptor 내용 바꿀 수 있도록
+	UINT32 VA_1st_Idx = 0;
+	UINT32 VA_2nd_Idx = 0;
+	UINT32 VA_Page_Idx = 0;
 
-void set_VA_Access(UINT32 VA, UINT32 option) // option이 1이면 10, 0이면 00으로
-{	// option을 set/clr로 전달하여 해당 VA를 접근을 부여하거나 해제한다.
+	VA_1st_Idx = (VA & L1_INDEX_MASK) >> L1_SHIFT;
+	VA_2nd_Idx = (VA & L2_INDEX_MASK) >> L2_SHIFT;
+	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
+
+	if (getAppNum() == NUM_APP0)
+	{
+		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));
+	}
+	else
+	{
+		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2));
+	}
+
+	pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
+	pTT2 = (UINT32*)(((UINT32)pTT2) | (VA_2nd_Idx<<2));
+//	PA = (*pTT2 & ~PAGE_OFFSET_MASK) | VA_Page_Idx;
+//	Uart_Printf("[VA_2_PA] VA[%0.8X], PA[%0.8X]\n", VA, PA);
+	return pTT2;
+}
+
+// option占쏙옙 set/clr占쏙옙 占쏙옙占쏙옙占싹울옙 占쌔댐옙 VA占쏙옙 占쏙옙占쏙옙占쏙옙 占싸울옙占싹거놂옙 占쏙옙占쏙옙占싼댐옙.
+void set_VA_Access(UINT32 VA, UINT32 option) // option占쏙옙 1占싱몌옙 10, 0占싱몌옙 00占쏙옙占쏙옙
+{
 	UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
@@ -116,16 +155,19 @@ void set_VA_Access(UINT32 VA, UINT32 option) // option이 1이면 10, 0이면 00
 	(*pTT2) &= ~0x3;		// [0:1] BIT Clear
     if (option == SET)
 	{
-		(*pTT2) |= ~0x2;	// Access Approve
+		(*pTT2) |= 0x2;	// Access Approve
 	}
 	else if (option == CLR)
 	{
 		(*pTT2) |= 0x0;		// Access Deny
 	}
+//    Uart_Printf("set_VA_Access [%0.8X] -> [%0.8X]\n", VA, *pTT2);
 
 }
-UINT32 get_VA_Access(UINT32 VA) // 이거 접근 권한 있으면 1 return
-{	//접근권한 상태 출력
+UINT32 get_VA_Access(UINT32 VA) // 占싱곤옙 占쏙옙占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙 1 return
+{	//占쏙옙占쌕깍옙占쏙옙 占쏙옙占쏙옙 占쏙옙占�
+	Uart_Printf("[get_VA_Access]\n");
+
     UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
@@ -140,10 +182,12 @@ UINT32 get_VA_Access(UINT32 VA) // 이거 접근 권한 있으면 1 return
 
 	if (getAppNum() == NUM_APP0)
 	{
+		Uart_Printf("[get_VA_Access] App0\n");
 		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));
 	}
 	else
 	{
+		Uart_Printf("[get_VA_Access] App1\n");
 		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2));
 	}
 
@@ -152,12 +196,21 @@ UINT32 get_VA_Access(UINT32 VA) // 이거 접근 권한 있으면 1 return
 
     UINT32 tmp_mask = 0x3;
 
-    // 00 이면 0 return
-    if((tmp_mask & *pTT2) == 0) return 0;
-    // 10 이면 1 return
-    else if((tmp_mask & *pTT2) == 0x2) return 1;
+    // 00 占싱몌옙 0 return
+    if((tmp_mask & *pTT2) == 0)
+    {
+    	Uart_Printf("[get_VA_Access] Access is denied..\n");
+    	return 0;
+    }
+    // 10 占싱몌옙 1 return
+    else if((tmp_mask & *pTT2) == 0x2)
+    {
+    	Uart_Printf("[get_VA_Access] Access is permitted..\n");
+    	return 1;
+    }
 
-	return -1; // 이거면 error
+    Uart_Printf("[get_VA_Access] Error..\n");
+	return -1; // 占싱거몌옙 error
 
 }
 
@@ -165,102 +218,60 @@ void set_Page_Info(UINT32 PA, UINT32 VA, UINT32 App_num, UINT32 idx) // page_ent
 {
     page_entry_info[idx].PA = PA;
     page_entry_info[idx].VA = VA;
-    page_entry_info[idx].App_num = App_num; // 얘가 2면 비어있는 거임
+    page_entry_info[idx].App_num = App_num; // 占쎄가 2占쏙옙 占쏙옙占쏙옙獵占�占쏙옙占쏙옙
+    Uart_Printf("[set_Page_Info] PA[%0.8X] VA[%0.8X] App_num[%d]\n", page_entry_info[idx].PA, page_entry_info[idx].VA, page_entry_info[idx].App_num);
 }
 
-void page_entry_init() // page entry 정보 가지고 있는 배열 초기화
+int victim = 0;
+UINT32 org[256];			// HDD에 되돌릴 주소
+UINT32 * table_2nd[256];	//
+UINT32 org_mode[256];		// 0 : DABT 1: PABT
+UINT32 org_va[256];
+UINT32 load_page(UINT32 VA, int app_num, int mode) // page 占쏙옙占쏙옙, 占쏙옙占쏙옙占싹몌옙 0 return
 {
-    UINT32 i;
-    for(i = 0; i <= page_entry_num; i++)
-    {
-        page_entry_info[i].App_num = 2;
-    }
-}
+	UINT32 src = ((app_num == 0) ? 0x44100000 : 0x44500000) + ((VA & ~0xFFF) - 0x30000000);
+	UINT32 dst = 0x44b00000 + (victim * 0x1000);
+//	Key_Wait_Key_Pressed();
+//	Key_Wait_Key_Released();
 
-UINT32 load_page(UINT32 VA, int app_num) // page 적재, 성공하면 0 return
-{
-    UINT32 i;
-    UINT32 full_idx = 0; // 만약 page entry 다 찼다면, 0번부터 순서대로 replacement 수행
-    UINT32 page_entry_idx;
+//	Uart_Printf("VA = %p, src = %p, dst = %p\n", VA, src, dst);
+	if (org[victim]){
+		debugPrintNum(victim);
+		debugPrintNum(org[victim]);
+		//table_2nd[victim] = VA_2_pTT2(org[victim]);
+		*(table_2nd[victim]) = 0;
+//		debugPrintNum(5);
+		CoInvalidateMainTlbVA(org_va[victim]);
+		if (org_mode[victim] == 0){
+			debugPrintNum(0);
+			memcpy((UINT32*)org[victim], (UINT32*)dst, 0x1000);
+		}
+	}
 
-    // 일단 PA에서 4, 5bit(AP[1:0]) 00인지 11인지 확인하기
-    UINT32 tmp_PA = VA_2_PA(VA);
-
-    // UINT32 tmp_mask = 0x00 | (3 << 4);
-
-    if(!get_VA_Access(VA)) // 2nd descriptor 00 -> page fault
-    {
-        // 빈칸에 넣기, 32개 전부 확인
-        page_entry_idx = -1;
-        for(i = 0; i < page_entry_num; i++)
-        {
-            if(page_entry_info[i].App_num == 2) // 비었으면 여기에 넣자 (RR)
-            {
-                page_entry_idx = i;
-                break;
-          }
-        }
-
-        // 빈칸 존재한다면 해당 위치(page_entry_idx)에 적재
-
-        // 만약 다 차있다면, 어떤 애를 대체할건지? // 만약 page ent_entry_idx == -1
-        if(page_entry_idx == -1)
-        {
-            page_entry_idx = full_idx;
-            set_VA_Access(page_entry_info[full_idx].VA, 0); // replace되는 페이지 접근권한 0으로 수정
-            full_idx = (full_idx + 1) % 32;
-        }
-
-        UINT32 dest_addr = page_entry_base + page_entry_idx * PAGE_SIZE;
-        UINT32 src_addr;
-        if(app_num == 0) src_addr = tmp_PA;
-        else if(app_num == 1) src_addr = (tmp_PA - RAM_APP0) + RAM_APP1; // VA 가 아니고 PA 이기 때문에 그냥 tmp_PA를 할당하는 게 맞는지???
-        else return -1;
-
-        // load page
-        memcpy(dest_addr, src_addr, PAGE_SIZE);
-
-        // page entry info update
-        page_entry_info[page_entry_idx].PA = tmp_PA;
-        page_entry_info[page_entry_idx].VA = VA;
-        page_entry_info[page_entry_idx].App_num = app_num;
-
-        // 접근권한 1로 바꾸기
-        set_VA_Access(VA, 1);
-
-        // TLB 정리
-        CoInvalidateMainTlb();
-
-        // 꺼내 쓰기 (write back) -> 이건 핸들러 정리되고 OS가 다시 접근할 것임 -> 그 떄 자동으로 접근됨
-
-    }
-    else if(get_VA_Access(VA)) // 11 -> 이미 있음, 꺼내 쓰기 (write back 어떻게?) -> 실제로는 이 부분 실행될 수 없음, 예외 처리
-    {
-        // 어디에 있는지 찾기
-        page_entry_idx = find_page_entry(VA, tmp_PA, app_num); // page_entry_info 배열의 몇번째 인덱스에 정보 담겨있는지?
-        if(page_entry_idx == -1) return -1; // page entry에 없음, 오류
-
-        //CoInvalidateMainTlb();
-    }
-    else return -1;
-
-    return 0;
+	org_mode[victim] = mode;
+	org[victim] = src;
+	org_va[victim] = (VA & ~0xFFF) | (app_num+1);
+	debugPrintNum(1);
+	table_2nd[victim] = VA_2_pTT2(VA);
+	debugPrintNum(2);
+	flag = 0;
+	//Uart1_Get_Char();
+	SetTransTable_SinlgePage(VA, dst, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
+	flag = 0;
+	debugPrintNum(3);
+//	Uart_Printf("table_2nd[victim] = %x, *table_2nd[victim] = %x\n", table_2nd[victim], *table_2nd[victim]);
+	//VA에 해당하는 2차 TT 수정 (dst로 접근하도록 수정) 캐쉬정책 inner WT, outter WBWA, nG
+	memcpy((UINT32*)dst, (UINT32*)src, 0x1000);
+	CoInvalidateMainTlbVA((VA & ~0xFFF) | (app_num+1));
+	CoInvalidateICache();
+	victim = (victim + 1) % page_entry_num;
+//	Key_Wait_Key_Pressed();
+//	Key_Wait_Key_Released();
+	return 0;
 }
 
 
-UINT32 find_page_entry(UINT32 VA, UINT32 PA, int app_num) // page entry에서 찾기
-{
-    UINT32 i;
-    for(i = 0; i < page_entry_num; i++)
-    {
-        if(page_entry_info[i].App_num == 2) continue;
-        if(page_entry_info[i].PA == PA && page_entry_info[i].VA == VA && page_entry_info[i].App_num == app_num)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
+
 
 
 void SetTransTable_MultiOS(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaStart, unsigned int attr)
@@ -293,13 +304,51 @@ void SetTransTable_MultiOS(unsigned int uVaStart, unsigned int uVaEnd, unsigned 
 	}
 }
 
+// 吏꾩꽦 異붽�
+void SetTransTable_MultiOS1(unsigned int uVaStart, unsigned int uVaEnd, unsigned int uPaStart, unsigned int attr)
+{
+	int i;
+	unsigned int* pTT = 0x0;
+	unsigned int nNumOfSec;
+	unsigned int* spTT;
+
+	uPaStart &= ~0xfffff;
+	uVaStart &= ~0xfffff;
+	if (getAppNum() == NUM_APP0)
+	{
+		pTT = (unsigned int *)TTBL0+(uVaStart>>20);
+		spTT = (unsigned int *)TTBL0;
+	}
+	else if (getAppNum() == NUM_APP1)
+	{
+		pTT = (unsigned int *)TTBL1+(uVaStart>>20);
+		spTT = (unsigned int *)TTBL1;
+	}
+	else
+	{
+		;
+	}
+	if (pTT != 0x0)
+	{
+		nNumOfSec = (0x1000+(uVaEnd>>20)-(uVaStart>>20))%0x1000;
+		for(i=0; i<=nNumOfSec; i++)
+		{
+			//Uart_Printf("BEFORE : %d\n",i);
+			*pTT++ = attr|(uPaStart+(i<<20));
+			//Uart_Printf("AFTER : %d\n",i);
+		}
+	}
+
+	for(i=0;i<4*1024*1024 ;i++)
+	{
+		*(spTT++) = 0x0;
+	}
+}
+
 UINT32 gaucAPP[MAX_APP_NUM];
 UINT8 gucAppNum = 0;
 struct T_Context gstRN[MAX_APP_NUM];
 struct T_Context * gpaunContextAddress[MAX_APP_NUM];
-
-
-//UINT32 TTBL[MAX_APP_NUM][0x400];
 
 void debugPrint(UINT8 x)
 {
@@ -313,7 +362,7 @@ void debugPrint(UINT8 x)
 }
 void debugPrintNum(UINT32 x)
 {
-    Uart_Printf("%.8X  =========\n", x);
+//    Uart_Printf("%.8X  =========\n", x);
 }
 
 void setAppNum(UINT8 num)
@@ -336,7 +385,7 @@ void API_App0_Ready(void)
    CoSetTTBase(TTBL0_CACHE);
    CoInvalidateMainTlb();
    setAppNum(NUM_APP0);
-   debugPrint(1);
+   CoInvalidateICache();
 }
 void API_App1_Ready(void)
 {
@@ -344,7 +393,7 @@ void API_App1_Ready(void)
    CoSetTTBase(TTBL1_CACHE);
    CoInvalidateMainTlb();
    setAppNum(NUM_APP1);
-   debugPrint(2);
+   CoInvalidateICache();
 }
 
 void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
@@ -389,30 +438,57 @@ void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 
         }
    }
 }
-UINT32 VA_2_PrintPermission(UINT32 VA) // VA ���ڷ� �޾Ƽ� PA �����ϴ� �Լ�
+
+// Va : 3000 0000
+void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
 {
-	UINT32 PA = 0;	// Return Value
-	UINT32* pTT1;
-	UINT32* pTT2;
+	int i = 0;
+   UINT32* pTT1;
+   UINT32* pTT2;
+//   UINT32* sPTT;
 
-	UINT32 VA_1st_Idx = 0;
-	UINT32 VA_2nd_Idx = 0;
+    UINT32 PA_1st_Idx = 0;
+   UINT32 PA_2nd_Idx = 0;
+    UINT32 VA_1st_Idx = 0;
+    UINT32 VA_2nd_Idx = 0;
+    UINT32 offsetpIdx = (VARAM & L1_INDEX_MASK) >> L1_SHIFT;
+   VA_1st_Idx = (uVaStart & L1_INDEX_MASK) >> L1_SHIFT;
+   PA_1st_Idx = (uPaStart & L1_INDEX_MASK) >> L1_SHIFT;
+   VA_2nd_Idx = (uVaStart & L2_INDEX_MASK) >> L2_SHIFT;
+   PA_2nd_Idx = (uPaStart & L2_INDEX_MASK) >> L2_SHIFT;
+   if (flag == 1) debugPrintNum(9);
+   if (getAppNum() == NUM_APP0)
+   {
+      pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));                        // Set 1st Entry Info
+      *pTT1 = (TTBL0_PAGE + (VA_1st_Idx - offsetpIdx) * 1024) | attr_1st;      // Set 1st Descriptor Info
+   }
+   else
+   {
+      pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2)) ;                     // Set 1st Entry Info
+      *pTT1 = (TTBL1_PAGE + (VA_1st_Idx - offsetpIdx) * 1024) | attr_1st;      // Set 1st Descriptor Info
+   }
 
-	VA_1st_Idx = (VA & L1_INDEX_MASK) >> L1_SHIFT;
-	VA_2nd_Idx = (VA & L2_INDEX_MASK) >> L2_SHIFT;
+   if (flag == 1) debugPrintNum(10);
+   pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
+   pTT2 = (UINT32*)(pTT2 + VA_2nd_Idx);                        // Set 2nd Entry Info
+   *pTT2 = ((PA_1st_Idx<<L1_SHIFT) | (PA_2nd_Idx<<L2_SHIFT) | attr_2nd);   // Set 2nd Descriptor Info
 
-	if (getAppNum() == NUM_APP0)
-	{
-		pTT1 = (UINT32 *)(TTBL0 + (VA_1st_Idx<<2));
-	}
-	else
-	{
-		pTT1 = (UINT32 *)(TTBL1 + (VA_1st_Idx<<2));
-	}
+   if (flag == 1) debugPrintNum(11);
 
-	pTT2 = (UINT32*)(*pTT1 & ~0x3FF);
-	pTT2 = (UINT32*)(((UINT32)pTT2) | (VA_2nd_Idx<<2));
-	PA = (*pTT2);
-	return PA;
+//   if(flag)
+//   {
+//	   for(i=0 ;i< 1024*4;i++)
+//	   {
+//		   Uart_Printf("Before SinlgePage[[%0.8X]] : \n", *pTT2);
+//		   (*pTT2) |= 0x2;
+//		   Uart_Printf("After SinlgePage[[%0.8X]] : \n", *pTT2);
+//		   pTT2++;
+//	   }
+//
+//   }
+////   if (((UINT32)pTT2 & 0xFFF) == 0)
+//   {
+////      Uart_Printf("APP : %d  original VA = %0.8X  PA = %0.8X computed PA = %0.8X, Permission PA = %0.8X\n", getAppNum(), uVaStart, uPaStart, VA_2_PA(uVaStart), VA_2_PrintPermission(uVaStart));
+////      Uart_Printf("APP : %d   pTT1 = %0.8X   *pTT1 = %0.8X   pTT2 = %0.8X   *pTT2 = %0.8X\n", getAppNum(), pTT1, *pTT1, pTT2, *pTT2);
+//   }
 }
-

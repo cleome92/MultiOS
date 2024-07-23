@@ -78,12 +78,14 @@ void Main(void)
 
 #if 1
 	setAppNum(NUM_APP0);
-	uPageVA = RAM_APP0;
+	uPageVA = VARAM;
 	uPagePA = RAM_APP0;
 
-	while (uPageVA != RAM_APP1)
+	// uPageVA : 0x3000
+	//  RAM_APP1 : 0x44100000 + -----
+	while (uPageVA != VARAM + 0x400000)
 	{
-		SetTransTable_SinlgePage(uPageVA, uPagePA, RW_WBWA_PAGE1, CHCHE_PAGE2_ACCESS);
+		SetTransTable_SinlgePage(uPageVA, uPagePA, RW_WBWA_PAGE1, RW_WBWA_PAGE2_NOACCESS);
 		uPageVA += 0x1000;
 		uPagePA += 0x1000;
 	}
@@ -94,11 +96,11 @@ void Main(void)
 
 	// TTLB1 �ㅼ젙
 	setAppNum(NUM_APP1);
-	uPageVA = RAM_APP0;
+	uPageVA = VARAM;
 	uPagePA = RAM_APP1;
-	while (uPageVA != RAM_APP1)
+	while (uPageVA != VARAM + 0x400000)
 	{
-		SetTransTable_SinlgePage(uPageVA, uPagePA, RW_WBWA_PAGE1, CHCHE_PAGE2_ACCESS);
+		SetTransTable_SinlgePage(uPageVA, uPagePA, RW_WBWA_PAGE1, RW_WBWA_PAGE2_NOACCESS);
 		uPageVA += 0x1000;
 		uPagePA += 0x1000;
 	}
@@ -126,21 +128,18 @@ void Main(void)
 	}
 #endif
 
-	// 諛뺣룄��
-	// page table entry init
-//	page_entry_init();
 	memset(&gstRN, 0, 2*sizeof(struct T_Context));
 	for(;;)
 	{
 		gstRN[NUM_APP0].RN[SP] = STACK_BASE_APP0;
 		gstRN[NUM_APP1].RN[SP] = STACK_BASE_APP1;
-		gstRN[NUM_APP0].RN[LR] = RAM_APP0 + 4;
-		gstRN[NUM_APP1].RN[LR] = RAM_APP0 + 4;
+		gstRN[NUM_APP0].RN[LR] = 0x30000000 + 4;
+		gstRN[NUM_APP1].RN[LR] = 0x30000000 + 4;
 
 
-//		setAppNum(NUM_APP0);
-		setAppNum(NUM_APP1);
-//		Timer0_Int_Delay(ENABLE,5);
+		setAppNum(NUM_APP0);
+//		setAppNum(NUM_APP1);
+		Timer0_Int_Delay(ENABLE,5);
 		if(getAppNum() == NUM_APP0)
 		{
 			Uart_Printf("\nAPP0 RUN\n", NUM_APP0);
