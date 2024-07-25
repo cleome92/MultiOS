@@ -1,0 +1,59 @@
+@startuml
+participant APP1 
+Control OS
+participant APP2
+
+OS -> APP1: Boot App
+activate APP1 #Green
+
+APP1 -> OS : "<font color=red><b>IRQ 모드 전환"
+deactivate APP1
+activate OS #Green
+OS -> OS : <font color=red><b>APP1 <font color=black><b>Context 백업
+OS -> APP2 : Boot App
+deactivate OS
+activate APP2 #Green
+APP2 -> OS : "<font color=red><b>IRQ 모드 전환"
+deactivate APP2
+activate OS #Green
+OS -> OS : APP2 Context 백업
+OS -> OS : APP1 Context 복원
+
+loop Infinity
+    OS -> APP1: IRQ 복귀
+    deactivate OS #Green
+    activate APP1 #Green
+    APP1 -> OS : "<font color=red><b>IRQ 모드 전환"
+    deactivate APP1
+    activate OS #Green
+    OS -> OS : APP1 Context 백업
+    OS -> OS : APP2 Context 복원
+
+    OS -> APP2: IRQ 복귀
+    deactivate OS #Green
+    activate APP2 #Green
+    APP2 -> OS : "<font color=red><b>IRQ 모드 전환"
+    deactivate APP2
+    activate OS #Green
+    OS -> OS : APP2 Context 백업
+    OS -> OS : APP1 Context 복원
+end
+
+@enduml
+
+@enduml
+
+@startuml
+participant APP
+Control OS
+Database System자원
+
+APP -> OS : "<font color=red><b>SVC 호출"
+OS -> System자원: 사용
+activate System자원
+System자원-> OS : 완료
+deactivate System자원
+
+OS -> APP : 결과 리턴
+
+@enduml
