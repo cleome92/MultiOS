@@ -1,4 +1,8 @@
 LG Bootcamp 7기 2반 Multi-Processing OS 3팀 훈민정음
+
+<img src="https://github.com/user-attachments/assets/799ae51c-ac95-4307-b773-58600fd2daae" width=45%>
+<img src="https://github.com/user-attachments/assets/e34decee-ba9e-4e96-9e3e-0399c386d8c6" width=45%>
+
 ---
 <h2>Multi-Processing🖥</h2>
 <h3>Please describe this.</h3>
