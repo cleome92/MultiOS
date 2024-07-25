@@ -11,7 +11,7 @@
 #include ".\map_array\map1_arr.h"
 
 WIN_INFO_ST ArrWinInfo[5];
-extern void SVC_Uart_printf(void);
+extern void SVC_Uart_Printf(const char *fmt,...);
 extern char SVC_Uart1_Get_Char(void);
 extern void SVC_Lcd_Clr_Screen(void);
 extern void SVC_Lcd_Draw_BMP(int x, int y, const unsigned short int *fp);
