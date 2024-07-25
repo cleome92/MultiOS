@@ -18,25 +18,24 @@ void Undef_Handler(unsigned int addr, unsigned int mode)
 
 void Dabort_Handler(unsigned int addr, unsigned int mode)
 {
-	unsigned int r, d, s, w, sd;
-
-//	Uart_Printf("DABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
-//	Uart_Printf("DABT-Fault Address[0x%X]\n", DABT_Falut_Address());
+	unsigned int r, s, sd;
 	sd = DABT_Falut_Status();
 	r = Macro_Extract_Area(sd, 0xf, 0);
-	d = Macro_Extract_Area(sd, 0xf, 4);
+//	d = Macro_Extract_Area(sd, 0xf, 4);
 	s = Macro_Extract_Area(sd, 0x1, 10);
-	w = Macro_Extract_Area(sd, 0x1, 11);
-	sd = Macro_Extract_Area(sd, 0x1, 12);
+//	w = Macro_Extract_Area(sd, 0x1, 11);
+//	sd = Macro_Extract_Area(sd, 0x1, 12);
 	r += (s << 4);
-//	Uart_Printf("Reason[0x%X]\nDomain[0x%X]\nRead(0)/Write(1)[%d]\nAXI-Decode(0)/Slave(1)[%d]\n", r, d, w, sd);
-
-	load_page(DABT_Falut_Address(), getAppNum(), 0);
-//	API_DemandPage(DABT_Falut_Address(), 0);
-//	if (r == 0x7)
-//	{
-//		load_page(DABT_Falut_Address(), getAppNum());
-//	}
+	if (r == 0x7)
+	{
+		load_page(DABT_Falut_Address(), getAppNum(), 0);
+		//	API_DemandPage(DABT_Falut_Address(), 0);
+	}
+	else
+	{
+		Uart_Printf("DABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
+		Uart_Printf("DABT-Fault Address[0x%X]\n", DABT_Falut_Address());
+	}
 
 #if 0
 	for(;;); /* 占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫짗占쏙옙占쎌쥙猷욑옙�용쐻占쎈��깍옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 占쎌쥙�뉛옙��Ø占쏙옙占쎌쥙猷욑옙�용쐻占쎌늿�뺧옙醫롫뼣占쎈챷�뺧옙醫롫짗占쏙옙占쎌쥙�볩옙�살쑎占쎌쥙猷욑옙占쏙옙醫롫짗占쎌눨�앾옙�덉굲 */
@@ -46,24 +45,23 @@ void Dabort_Handler(unsigned int addr, unsigned int mode)
 void Pabort_Handler(unsigned int addr, unsigned int mode)
 {
 	unsigned int r, s, sd;
-
-//	Uart_Printf("PABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
-//	Uart_Printf("PABT-Fault Address[0x%X]\n", PABT_Falut_Address());
 	sd = PABT_Falut_Status();
 	r = Macro_Extract_Area(sd, 0xf, 0);
 	s = Macro_Extract_Area(sd, 0x1, 10);
 	sd = Macro_Extract_Area(sd, 0x1, 12);
 	r += (s << 4);
-//	Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
+	if (r == 0x7)
+	{
+		load_page(PABT_Falut_Address(), getAppNum(), 1);
+		//	API_DemandPage(DABT_Falut_Address(), 0);
+	}
+	else
+	{
+		Uart_Printf("PABT-Exception @[0x%X]\nMode[0x%X]\n", addr, mode);
+		Uart_Printf("PABT-Fault Address[0x%X]\n", PABT_Falut_Address());
 
-	load_page(PABT_Falut_Address(), getAppNum(), 1);
-//	API_DemandPage(PABT_Falut_Address(), 1);
-	//for(;;);
-
-//	if (r == 0x7)
-//	{
-//		load_page(DABT_Falut_Address(), getAppNum());
-//	}
+		Uart_Printf("Reason[0x%X]\nAXI-Decode(0)/Slave(1)[%d]\n", r, sd);
+	}
 }
 
 #if 1
@@ -304,7 +302,7 @@ void Timer0_ISR(void)
 	}
 }
 
-// SVC System Call 援ы쁽
+// SVC System Call Uart Print
 void _SVC_Uart_Printf(const char *fmt,...)
 {
 	Uart1_Printf(fmt);
@@ -355,21 +353,19 @@ void _SVC_Lcd_Init(void)
 }
 
 extern void Lcd_Win_Init_arr(int id,int en, WIN_INFO_ST win_arr[5]);
+
 void _SVC_Lcd_Win_Init(int id, int en, WIN_INFO_ST win_arr[5])
 {
-//	Uart_Printf("\n[SVC Win Lcd Init]");
 	Lcd_Win_Init_arr(id, en, win_arr);
 }
 
 void _SVC_Lcd_Brightness_Control(int level)
 {
-//	Uart_Printf("\n[SVC Lcd Brightness Control]");
 	Lcd_Brightness_Control(level);
 }
 
 void _SVC_Key_Poll_Init(void)
 {
-//	Uart_Printf("\n[SVC Key Poll Init]");
 	Key_Poll_Init();
 }
 

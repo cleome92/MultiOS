@@ -131,10 +131,10 @@ HandlerIRQ:
 
     cmp r3, #0
 
-	ldreq	r0, =0x1f	@처음 APP 스위칭시
+	ldreq	r0, =0x1f	@Default spsr
 	msreq 	spsr, r0
 
-    msrne spsr, r3		@기존 기동중인 APP 있을 경우
+    msrne spsr, r3		@Load spsr
 	ldr	lr, [r2, #68]
 
 	push {r4-r7}
@@ -226,25 +226,27 @@ HandlerPabort:
 	subs	pc, lr, #4
 
 	.extern SVC_Handler
+
+
 HandlerSVC:
 	stmfd sp!, {r4-r6, lr}
-	ldr r4, [lr, #-4] @ svc 명령 읽어내기
-	bic r4, r4, #0xff000000 @svc 명령에서 숫자부분만 남기기 (SVC_Handler 배열의 요소번호)
+	ldr r4, [lr, #-4] 			@ SVC operation number
+	bic r4, r4, #0xff000000 	@ get SVC call number
 	ldr r12, =SVC_Handler
-	ldr lr, [r12, r4, lsl #2] @ r12(SVC_Handler) + r4(요소번호) * 4 = 함수의 주소
+	ldr lr, [r12, r4, lsl #2] 	@ r12(SVC_Handler) + r4(SVC number * 4)
 
     @sys 모드로 전환 (sp, lr이 sys것임에 주의해야 함)
 	mov r5, sp   @ SVC SP Back up
 
 	mrs      r4, cpsr
 	cps      #0x1f
-	mov   r6, sp   @ SYS SP Load
+	mov   r6, sp   				@ SYS SP Load
 
 	msr      cpsr_cxsf, r4
-	mov sp, r6   @ SVC SP = SYS SP
-	blx lr       @ 번호에 맞는 해당 함수 호출(r0~r3은 그대로 전달해야 함)
+	mov sp, r6   				@ SVC SP <- SYS SP
+	blx lr       				@ SVC Function Call
 
-	mov sp, r5
+	mov sp, r5					@ SVC SP Load
 
 	ldmfd sp!, {r4-r6, pc}^
 

@@ -89,17 +89,17 @@ UINT32 VA_2_PA(UINT32 VA) // VA 占쏙옙占쌘뤄옙 占쌨아쇽옙 PA 占쏙�
 }
 UINT32* VA_2_pTT2(UINT32 VA) // VA 占쏙옙占쌘뤄옙 占쌨아쇽옙 PA 占쏙옙占쏙옙占싹댐옙 占쌉쇽옙
 {
-	UINT32 PA = 0;	// Return Value
+//	UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
 
 	UINT32 VA_1st_Idx = 0;
 	UINT32 VA_2nd_Idx = 0;
-	UINT32 VA_Page_Idx = 0;
+//	UINT32 VA_Page_Idx = 0;
 
 	VA_1st_Idx = (VA & L1_INDEX_MASK) >> L1_SHIFT;
 	VA_2nd_Idx = (VA & L2_INDEX_MASK) >> L2_SHIFT;
-	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
+//	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
 
 	if (getAppNum() == NUM_APP0)
 	{
@@ -120,17 +120,17 @@ UINT32* VA_2_pTT2(UINT32 VA) // VA 占쏙옙占쌘뤄옙 占쌨아쇽옙 PA 占�
 // option占쏙옙 set/clr占쏙옙 占쏙옙占쏙옙占싹울옙 占쌔댐옙 VA占쏙옙 占쏙옙占쏙옙占쏙옙 占싸울옙占싹거놂옙 占쏙옙占쏙옙占싼댐옙.
 void set_VA_Access(UINT32 VA, UINT32 option) // option占쏙옙 1占싱몌옙 10, 0占싱몌옙 00占쏙옙占쏙옙
 {
-	UINT32 PA = 0;	// Return Value
+//	UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
 
 	UINT32 VA_1st_Idx = 0;
 	UINT32 VA_2nd_Idx = 0;
-	UINT32 VA_Page_Idx = 0;
+//	UINT32 VA_Page_Idx = 0;
 
 	VA_1st_Idx = (VA & L1_INDEX_MASK) >> L1_SHIFT;
 	VA_2nd_Idx = (VA & L2_INDEX_MASK) >> L2_SHIFT;
-	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
+//	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
 
 	if (getAppNum() == NUM_APP0)
 	{
@@ -161,17 +161,17 @@ UINT32 get_VA_Access(UINT32 VA) // 占싱곤옙 占쏙옙占쏙옙 占쏙옙占�
 {	//占쏙옙占쌕깍옙占쏙옙 占쏙옙占쏙옙 占쏙옙占�
 	Uart_Printf("[get_VA_Access]\n");
 
-    UINT32 PA = 0;	// Return Value
+//    UINT32 PA = 0;	// Return Value
 	UINT32* pTT1;
 	UINT32* pTT2;
 
 	UINT32 VA_1st_Idx = 0;
 	UINT32 VA_2nd_Idx = 0;
-	UINT32 VA_Page_Idx = 0;
+//	UINT32 VA_Page_Idx = 0;
 
 	VA_1st_Idx = (VA & L1_INDEX_MASK) >> L1_SHIFT;
 	VA_2nd_Idx = (VA & L2_INDEX_MASK) >> L2_SHIFT;
-	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
+//	VA_Page_Idx = (VA & PAGE_OFFSET_MASK);
 
 	if (getAppNum() == NUM_APP0)
 	{
@@ -220,46 +220,29 @@ UINT32 org[256];			// HDD에 되돌릴 주소
 UINT32 * table_2nd[256];	//
 UINT32 org_mode[256];		// 0 : DABT 1: PABT
 UINT32 org_va[256];
-UINT32 load_page(UINT32 VA, int app_num, int mode) // page 占쏙옙占쏙옙, 占쏙옙占쏙옙占싹몌옙 0 return
+UINT32 load_page(UINT32 VA, int app_num, int mode) // parameter - app_num : 현재 app 번호, mode : 현재 abort 종류
 {
-	UINT32 src = ((app_num == 0) ? 0x44100000 : 0x44500000) + ((VA & ~0xFFF) - 0x30000000);
-	UINT32 dst = 0x44b00000 + (victim * 0x1000);
-//	Key_Wait_Key_Pressed();
-//	Key_Wait_Key_Released();
+	UINT32 src = ((app_num == 0) ? 0x44100000 : 0x44500000) + ((VA & ~0xFFF) - 0x30000000); // App PA 계산
+	UINT32 dst = 0x44b00000 + (victim * 0x1000); // 페이지 엔트리에 해당되는 PA 계산
 
-//	Uart_Printf("VA = %p, src = %p, dst = %p\n", VA, src, dst);
-	if (org[victim]){
-		debugPrintNum(victim);
-		debugPrintNum(org[victim]);
-		//table_2nd[victim] = VA_2_pTT2(org[victim]);
+	if (org[victim]){ // 페이지 테이블 엔트리를 저장한 RAM이 가득찬 경우
 		*(table_2nd[victim]) = 0;
-//		debugPrintNum(5);
 		CoInvalidateMainTlbVA(org_va[victim]);
 		if (org_mode[victim] == 0){
-			debugPrintNum(0);
 			memcpy((UINT32*)org[victim], (UINT32*)dst, 0x1000);
 		}
 	}
 
-	org_mode[victim] = mode;
-	org[victim] = src;
-	org_va[victim] = (VA & ~0xFFF) | (app_num+1);
-	debugPrintNum(1);
-	table_2nd[victim] = VA_2_pTT2(VA);
-	debugPrintNum(2);
-	flag = 0;
-	//Uart1_Get_Char();
-	SetTransTable_SinlgePage(VA, dst, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
-	flag = 0;
-	debugPrintNum(3);
-//	Uart_Printf("table_2nd[victim] = %x, *table_2nd[victim] = %x\n", table_2nd[victim], *table_2nd[victim]);
+	org_mode[victim] = mode; // 0 : DABT 1: PABT
+	org[victim] = src; // App PA
+	org_va[victim] = (VA & ~0xFFF) | (app_num+1); // VA 저장
+	table_2nd[victim] = VA_2_pTT2(VA); // 2차 페이지 테이블 엔트리 주소 저장
 	//VA에 해당하는 2차 TT 수정 (dst로 접근하도록 수정) 캐쉬정책 inner WT, outter WBWA, nG
-	memcpy((UINT32*)dst, (UINT32*)src, 0x1000);
+	SetTransTable_SinlgePage(VA, dst, RW_WBWA_PAGE1, RW_WBWA_PAGE2_ACCESS);
+	memcpy((UINT32*)dst, (UINT32*)src, 0x1000); // App PA를 페이지 테이블 엔트리 저장 RAM에 로드
 	CoInvalidateMainTlbVA((VA & ~0xFFF) | (app_num+1));
 	CoInvalidateICache();
-	victim = (victim + 1) % page_entry_num;
-//	Key_Wait_Key_Pressed();
-//	Key_Wait_Key_Released();
+	victim = (victim + 1) % page_entry_num; // 페이지 엔트리 번호 업데이트
 	return 0;
 }
 
@@ -303,7 +286,7 @@ void SetTransTable_MultiOS1(unsigned int uVaStart, unsigned int uVaEnd, unsigned
 	int i;
 	unsigned int* pTT = 0x0;
 	unsigned int nNumOfSec;
-	unsigned int* spTT;
+	unsigned int* spTT = 0;
 
 	uPaStart &= ~0xfffff;
 	uVaStart &= ~0xfffff;
@@ -440,7 +423,7 @@ void SetTransTable_Page(UINT32 uVaStart, UINT32 uVaEnd, UINT32 uPaStart, UINT32 
 // Va : 3000 0000
 void SetTransTable_SinlgePage(UINT32 uVaStart, UINT32 uPaStart, UINT32 attr_1st, UINT32 attr_2nd)
 {
-	int i = 0;
+//	int i = 0;
    UINT32* pTT1;
    UINT32* pTT2;
 //   UINT32* sPTT;
